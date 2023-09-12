@@ -1,4 +1,4 @@
-public struct DependantList<Independent, Dependency, Element> where Dependency : Comparable {
+public struct DependantList<Independent, Dependency, Element> where Element : Comparable {
 	public typealias Array = DependantArray<Independent, Dependency, Element>
 	public typealias Record = Array.Record
 	public typealias Decompose = Array.Decompose
@@ -9,9 +9,11 @@ public struct DependantList<Independent, Dependency, Element> where Dependency :
 	public typealias Query<T: Comparable> = (Dependency) -> T
 
 	let configuration: Configuration
+	private let root: Node
 
 	public init(configuration: Configuration) {
 		self.configuration = configuration
+		self.root = Node()
 	}
 
 }
@@ -41,8 +43,16 @@ extension DependantList {
 
 extension DependantList {
 	public func insert(_ value: Element) {
-
+//		let target = configuration.arrayConfig.decompose(value)
+//
+//		let (node, index, parent) = findLeaf(in: root, parent: nil, with: target.dependency, using: query)
+//
+//		
 	}
+//
+//	func findLeaf<T: Comparable>(in node: Node, parent: Node?, with target: T, using query: Query<T>) -> (Node, Int, Node?) {
+//		
+//	}
 }
 
 extension DependantList : Sequence {
@@ -54,5 +64,10 @@ extension DependantList : Sequence {
 
 	public func makeIterator() -> Iterator {
 		Iterator()
+	}
+}
+
+extension DependantList {
+	final class Node {
 	}
 }

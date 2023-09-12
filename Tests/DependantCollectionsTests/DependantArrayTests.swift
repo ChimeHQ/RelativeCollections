@@ -2,13 +2,23 @@ import XCTest
 
 import DependantCollections
 
+extension Range : Comparable where Bound : Comparable {
+	public static func < (lhs: Range<Bound>, rhs: Range<Bound>) -> Bool {
+		lhs.lowerBound < rhs.lowerBound
+	}
+}
+
 final class DependantArrayTests: XCTestCase {
-	struct NamedThing<T>: Hashable, CustomDebugStringConvertible where T : Hashable{
+	struct NamedThing<T>: Hashable, Comparable, CustomDebugStringConvertible where T : Hashable, T : Comparable {
 		let name: String
 		let value: T
 
 		var debugDescription: String {
-			"[\(name): \(value)]"
+			"{\(name): \(value)}"
+		}
+
+		static func < (lhs: DependantArrayTests.NamedThing<T>, rhs: DependantArrayTests.NamedThing<T>) -> Bool {
+			lhs.value < rhs.value
 		}
 	}
 

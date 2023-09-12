@@ -1,7 +1,7 @@
 import DependantCollectionsInternal
 
 /// A sorted list that holds recursively-dependent values.
-public struct DependantArray<Independent, Dependency, Value> where Dependency : Comparable {
+public struct DependantArray<Independent, Dependency, Value> where Value : Comparable {
 	public typealias Decompose = (Value) -> Record
 	public typealias Compose = (Record) -> Value
 	public typealias Integrate = (Dependency, Dependency) -> Dependency
@@ -67,7 +67,9 @@ extension DependantArray {
 		let newRecord = configuration.decompose(value)
 
 		let idx = list.binarySearch { record, idx in
-			return record.dependency < newRecord.dependency
+			let recomposed = configuration.compose(record)
+
+			return recomposed < value
 		} ?? list.endIndex
 
 		list.insert(newRecord, at: idx)
@@ -84,8 +86,8 @@ extension DependantArray {
 	public mutating func append(_ value: Value) {
 		let newRecord = configuration.decompose(value)
 
-		if let last = list.last {
-			precondition(newRecord.dependency > last.dependency)
+		if let last = self[before: endIndex] {
+			precondition(value > last)
 		}
 
 		list.append(newRecord)
@@ -165,7 +167,9 @@ extension DependantArray : MutableCollection, RandomAccessCollection {
 			let nextPos = list.index(after: position)
 
 			if let before = list[before: position] {
-				precondition(newRecord.dependency > before.dependency)
+				let beforeComposed = configuration.compose(before)
+
+				precondition(newValue > beforeComposed)
 			}
 
 			for updateIdx in nextPos..<list.endIndex {
@@ -179,7 +183,7 @@ extension DependantArray : MutableCollection, RandomAccessCollection {
 	}
 }
 
-extension DependantArray.Record : Equatable where Independent : Equatable {}
+extension DependantArray.Record : Equatable where Independent : Equatable, Dependency : Equatable {}
 extension DependantArray.Record : Hashable where Independent : Hashable, Dependency : Hashable {}
 extension DependantArray.Record : Sendable where Independent : Sendable, Dependency : Sendable {}
 

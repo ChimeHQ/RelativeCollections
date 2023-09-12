@@ -34,7 +34,6 @@ final class DependantListTests: XCTestCase {
 			.init(name: "a", value: 0..<1),
 		]
 
-		XCTAssertEqual(list.map { $0 }, expected)
+		XCTAssertEqual(Array(list), expected)
 	}
-
 }
