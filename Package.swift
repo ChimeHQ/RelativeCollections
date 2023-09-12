@@ -3,15 +3,15 @@
 import PackageDescription
 
 let package = Package(
-	name: "SpanList",
+	name: "DependantCollections",
 	products: [
-		.library(name: "SpanList", targets: ["SpanList"]),
+		.library(name: "DependantCollections", targets: ["DependantCollections"]),
 	],
 	targets: [
-		.target(name: "DPlusTree"),
-		.testTarget(name: "DPlusTreeTests", dependencies: ["DPlusTree"]),
+		.target(name: "DependantCollectionsInternal"),
+		.testTarget(name: "DependantCollectionsInternalTests", dependencies: ["DependantCollectionsInternal"]),
 
-		.target(name: "SpanList"),
-		.testTarget(name: "SpanListTests", dependencies: ["SpanList"]),
+		.target(name: "DependantCollections", dependencies: ["DependantCollectionsInternal"]),
+		.testTarget(name: "DependantCollectionsTests", dependencies: ["DependantCollections"]),
 	]
 )
