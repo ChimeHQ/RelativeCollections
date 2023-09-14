@@ -1,206 +1,198 @@
-import DependantCollectionsInternal
+public struct DependantArray<Value, Weight> where Weight : AdditiveArithmetic {
+	public typealias Predicate = (Record, Index) -> Bool
+	private typealias Storage = ContiguousArray<Record>
 
-/// A sorted list that holds recursively-dependent values.
-public struct DependantArray<Independent, Dependency, Value> where Value : Comparable {
-	public typealias Decompose = (Value) -> Record
-	public typealias Compose = (Record) -> Value
-	public typealias Integrate = (Dependency, Dependency) -> Dependency
-	public typealias Separate = (Dependency, Dependency) -> Dependency
+	public struct WeightedValue {
+		public let value: Value
+		public let weight: Weight
 
-	typealias List = ContiguousArray<Record>
-
-	private var list: List
-	let configuration: Configuration
-
-	public init(configuration: Configuration) {
-		self.list = List()
-		self.configuration = configuration
-	}
-}
-
-extension DependantArray {
-	public struct Configuration {
-		public let decompose: Decompose
-		public let compose: Compose
-		public let integrate: Integrate
-		public let separate: Separate
-		public let initial: Dependency
-
-		public init(
-			decompose: @escaping Decompose,
-			compose: @escaping Compose,
-			integrate: @escaping Integrate,
-			separate: @escaping Separate,
-			initial: Dependency
-		) {
-			self.decompose = decompose
-			self.compose = compose
-			self.integrate = integrate
-			self.separate = separate
-			self.initial = initial
+		public init(value: Value, weight: Weight) {
+			self.value = value
+			self.weight = weight
 		}
 	}
-}
 
-extension DependantArray {
 	public struct Record {
-		public let independent: Independent
-		public private(set) var dependency: Dependency
+		public let value: Value
+		public let weight: Weight
+		public internal(set) var dependency: Weight
+	}
 
-		public init(independent: Independent, dependency: Dependency) {
-			self.independent = independent
-			self.dependency = dependency
+	private var storage = Storage()
+
+	public init() {
+	}
+}
+
+extension DependantArray {
+	private func findDependency(for position: Int) -> Weight {
+		guard let record = storage[before: position] else {
+			return Weight.zero
 		}
 
-		mutating func separate(_ previousDep: Dependency, using config: Configuration) {
-			self.dependency = config.separate(previousDep, dependency)
+		return record.weight + record.dependency
+	}
+
+	private mutating func applyDelta(_ delta: Weight, after index: Index) {
+		if delta == Weight.zero {
+			return
 		}
 
-		mutating func integrate(_ newDep: Dependency, using config: Configuration) {
-			self.dependency = config.integrate(newDep, dependency)
+		applyDelta(delta, startingAt: storage.index(after: index))
+	}
+
+	private mutating func applyDelta(_ delta: Weight, startingAt index: Index) {
+		if delta == Weight.zero {
+			return
+		}
+
+		for updateIndex in index..<storage.endIndex {
+			storage[updateIndex].dependency += delta
 		}
 	}
 }
 
 extension DependantArray {
-	public mutating func insert(_ value: Value) {
-		let newRecord = configuration.decompose(value)
+	public mutating func append(_ value: WeightedValue) {
+		let idx = storage.endIndex
 
-		let idx = list.binarySearch { record, idx in
-			let recomposed = configuration.compose(record)
-
-			return recomposed < value
-		} ?? list.endIndex
-
-		list.insert(newRecord, at: idx)
+		insert(value, at: idx)
 	}
 
-	public mutating func remove(at index: Index) {
-		let record = list.remove(at: index)
+	private mutating func insert(_ value: WeightedValue, at index: Index) {
+		let previousWeight = findDependency(for: index)
 
-		for updateIdx in index..<list.endIndex {
-			list[updateIdx].separate(record.dependency, using: configuration)
+		let record = Record(value: value.value, weight: value.weight, dependency: previousWeight)
+
+		storage.insert(record, at: index)
+
+		let delta = value.weight 
+
+		applyDelta(delta, startingAt: storage.index(after: index))
+	}
+
+	public func record(at index: Index) -> Record {
+		let previousWeight = findDependency(for: index)
+		let record = storage[index]
+
+		return Record(value: record.value, weight: record.weight, dependency: previousWeight)
+	}
+
+	@discardableResult
+	public mutating func remove(at index: Index) -> Record {
+		let record = storage[index]
+
+		storage.remove(at: index)
+
+		let delta = Weight.zero - record.weight
+
+		applyDelta(delta, startingAt: index)
+
+		return record
+	}
+
+	public mutating func replace(_ value: WeightedValue, at index: Index) {
+		let current = storage[index]
+
+		// overwrite it
+		let previousWeight = findDependency(for: index)
+		let record = Record(value: value.value, weight: value.weight, dependency: previousWeight)
+
+		storage[index] = record
+
+		// compute delta, and update affected records
+		let delta = value.weight - current.weight
+
+		applyDelta(delta, after: index)
+	}
+}
+
+extension DependantArray where Weight : Comparable {
+	public mutating func insert(_ value: WeightedValue, using predicate: Predicate) {
+		let idx = storage.binarySearch(predicate: predicate) ?? storage.endIndex
+
+		insert(value, at: idx)
+		
+		// now, verify that the array is still in sorted order
+		let insertedDep = storage[idx].dependency
+
+		if let previousDep = storage[before: idx]?.dependency {
+			precondition(insertedDep > previousDep)
 		}
-	}
 
-	public mutating func append(_ value: Value) {
-		let newRecord = configuration.decompose(value)
-
-		if let last = self[before: endIndex] {
-			precondition(value > last)
-		}
-
-		list.append(newRecord)
-	}
-
-	public func index<T: Comparable>(closestTo target: T, using transform: (Value) -> T) -> Index? {
-		list.binarySearch { record, idx in
-			let value = self[idx]
-			let key = transform(value)
-
-			return target < key
+		if let nextDep = storage[after: idx]?.dependency {
+			precondition(nextDep > insertedDep)
 		}
 	}
 }
 
 extension DependantArray : Sequence {
-	public typealias Element = Value
-
 	public struct Iterator: IteratorProtocol {
-		public typealias Element = Value
+		private let array: DependantArray
+		private var index: DependantArray.Index
 
-		private let configuration: Configuration
-		private var listIterator: List.Iterator
-
-		init(listIterator: List.Iterator, configuration: Configuration) {
-			self.listIterator = listIterator
-			self.configuration = configuration
+		init(array: DependantArray) {
+			self.array = array
+			self.index = array.startIndex
 		}
 
-		public mutating func next() -> Value? {
-			guard let record = listIterator.next() else {
+		public mutating func next() -> Record? {
+			if index >= array.endIndex {
 				return nil
 			}
 
-			return configuration.compose(record)
+			let record = array.record(at: index)
+
+			self.index = array.index(after: index)
+
+			return record
 		}
 	}
 
 	public func makeIterator() -> Iterator {
-		Iterator(listIterator: list.makeIterator(), configuration: configuration)
+		Iterator(array: self)
 	}
 }
 
-extension DependantArray : MutableCollection, RandomAccessCollection {
+
+extension DependantArray : RandomAccessCollection {
 	public typealias Index = Int
 
 	public var startIndex: Index {
-		list.startIndex
+		storage.startIndex
 	}
 
 	public var endIndex: Index {
-		list.endIndex
-	}
-
-	private func findDependency(for position: Int) -> Dependency {
-		list[before: position]?.dependency ?? configuration.initial
-	}
-
-	public subscript(position: Index) -> Value {
-		_read {
-			precondition(list.isEmpty == false)
-
-			let record = list[position]
-			let previous = findDependency(for: position)
-
-			yield configuration.compose(Record(independent: record.independent, dependency: previous))
-		}
-		set(newValue) {
-			precondition(list.isEmpty == false)
-			
-			let existing = list[position]
-			let newRecord = configuration.decompose(newValue)
-			let depDelta = configuration.separate(existing.dependency, newRecord.dependency)
-
-			list[position] = newRecord
-
-			let nextPos = list.index(after: position)
-
-			if let before = list[before: position] {
-				let beforeComposed = configuration.compose(before)
-
-				precondition(newValue > beforeComposed)
-			}
-
-			for updateIdx in nextPos..<list.endIndex {
-				list[updateIdx].integrate(depDelta, using: configuration)
-			}
-		}
+		storage.endIndex
 	}
 
 	public func index(after i: Index) -> Index {
-		list.index(after: i)
+		storage.index(after: i)
+	}
+
+	public subscript(position: Index) -> Record {
+		_read {
+			yield storage[position]
+		}
 	}
 }
 
-extension DependantArray.Record : Equatable where Independent : Equatable, Dependency : Equatable {}
-extension DependantArray.Record : Hashable where Independent : Hashable, Dependency : Hashable {}
-extension DependantArray.Record : Sendable where Independent : Sendable, Dependency : Sendable {}
+extension DependantArray.WeightedValue : Equatable where Value : Equatable {}
+extension DependantArray.WeightedValue : Hashable where Value : Hashable, Weight : Hashable {}
+extension DependantArray.WeightedValue : Sendable where Value : Sendable, Weight : Sendable {}
+
+extension DependantArray.WeightedValue : CustomDebugStringConvertible {
+	public var debugDescription: String {
+		"{\(self.value), \(self.weight)}"
+	}
+}
+
+extension DependantArray.Record : Equatable where Value : Equatable {}
+extension DependantArray.Record : Hashable where Value : Hashable, Weight : Hashable {}
+extension DependantArray.Record : Sendable where Value : Sendable, Weight : Sendable {}
 
 extension DependantArray.Record : CustomDebugStringConvertible {
 	public var debugDescription: String {
-		"(\(self.independent), \(self.dependency))"
-	}
-}
-
-extension DependantArray.Configuration where Dependency : AdditiveArithmetic {
-	public init(decompose: @escaping DependantArray.Decompose, compose: @escaping DependantArray.Compose) {
-		self.init(
-			decompose: decompose,
-			compose: compose,
-			integrate: { $0 + $1 },
-			separate: { $1 - $0 },
-			initial: Dependency.zero
-		)
+		"{\(self.value), \(self.weight), \(self.dependency)}"
 	}
 }
