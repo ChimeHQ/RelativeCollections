@@ -1,29 +1,10 @@
-public enum BinarySearchDirection: Hashable, Sendable {
-	case ascending
-	case descending
-}
-
 extension Collection {
-	/// Returns the first index that satisifies the predicate and direction.
+	/// Returns the first index that satisifies the predicate.
 	///
-	/// Search direction can be controlled with `direction`.
-	/// - `.ascending`: predicate failure checks higher indexes
-	/// - `.descending`: predicate failure checks lower indexes
+	/// A predicate failure will check higher indexes.
 	public func binarySearch(
-		direction: BinarySearchDirection = .ascending,
 		predicate: (Iterator.Element, Index) throws -> Bool
 	) rethrows -> Index? {
-		switch direction {
-		case .ascending:
-			try binarySearchAscending(predicate: predicate)
-		case .descending:
-			try binarySearchDescending(predicate: predicate)
-		}
-	}
-
-	/// Returns the lowest index where the predicate returns true. A
-	/// failure checks higher indexes.
-	private func binarySearchAscending(predicate: (Iterator.Element, Index) throws -> Bool) rethrows -> Index? {
 		var low = startIndex
 		var high = endIndex
 
@@ -41,33 +22,6 @@ extension Collection {
 		}
 
 		if low == endIndex {
-			return nil
-		}
-
-		return low
-	}
-
-	/// Returns the highest index where the predicate returns true. A
-	/// failure checks lower indexes.
-	private func binarySearchDescending(predicate: (Iterator.Element, Index) throws -> Bool) rethrows -> Index? {
-		var low = startIndex
-		var high = endIndex
-
-		while low != high {
-			let mid = index(low, offsetBy: distance(from: low, to: high) / 2)
-			if try predicate(self[mid], mid) {
-				low = index(after: mid)
-			} else {
-				high = mid
-			}
-
-			if low > high {
-				return nil
-			}
-		}
-
-		low = index(low, offsetBy: -1)
-		if low < startIndex {
 			return nil
 		}
 

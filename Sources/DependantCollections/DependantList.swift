@@ -1,138 +1,182 @@
-//public struct DependantList<Element, Weight> {
-//	public struct Record {
-//		let value: Element
-//		let dependency: Weight
-//	}
-//
-//	public typealias ComputeWeight = (Element) -> Weight
-//	public typealias CombineWeights = (Weight, Weight) -> Weight
-//	public typealias SeparateWeights = (Weight, Weight) -> Weight
-//	public typealias Comparator = (Record, Record) -> Bool
-//	public typealias Predicate = (Record) -> Bool
-//
-//	let configuration: Configuration
-//	private let root: Node
-//
-//	public init(configuration: Configuration) {
-//		self.configuration = configuration
-//		self.root = Node.leaf
-//	}
-//}
-//
-//extension DependantList {
-//	public struct Configuration {
-//		public let leafCapacity: Int
-//		public let internalCapacity: Int
-//		public let computeWeight: ComputeWeight
-//		public let combineWeights: CombineWeights
-//		public let separateWeights: SeparateWeights
-//		public let comparator: Comparator
-//		public let initial: Weight
-//
-//		public init(
-//			leafCapacity: Int = 100,
-//			internalCapacity: Int = 100,
-//			computeWeight: @escaping ComputeWeight,
-//			combineWeights: @escaping CombineWeights,
-//			separateWeights: @escaping SeparateWeights,
-//			comparator: @escaping Comparator,
-//			initial: Weight
-//		) {
-//			self.leafCapacity = leafCapacity
-//			self.internalCapacity = internalCapacity
-//			self.computeWeight = computeWeight
-//			self.combineWeights = combineWeights
-//			self.separateWeights = separateWeights
-//			self.comparator = comparator
-//			self.initial = initial
-//		}
-//	}
-//}
-//
-//extension DependantList {
-//	public func insert(_ value: Element, using predicate: Predicate) {
-//		var weight = configuration.initial
-//
-//		let node = findLeaf(in: root, weight: &weight, using: predicate)
-//
-//		guard case var .leaf(leaf) = node.kind else { preconditionFailure() }
-//
-//		let record = Record(value: value, dependency: weight)
-//
-//		leaf.records.insert(record)
-//
-//	}
-//
-//	private func findLeaf(in node: Node, weight: inout Weight, using predicate: Predicate) -> Node {
-//		switch node.kind {
-//		case .leaf:
-//			return node
-//		case .internalNode:
-//			fatalError()
-//		}
-//	}
-//}
-//
-////extension DependantList : Sequence {
-////	public struct Iterator : IteratorProtocol {
-////		private var node: Node?
-////		private var index: Array.Index
-////
-////		init(node: Node) {
-////			self.node = node
-////
-////			guard case let .leaf(leaf) = node.kind else { preconditionFailure() }
-////
-////			self.index = leaf.records.startIndex
-////		}
-////
-////		public mutating func next() -> Element? {
-////			guard let currentNode = node else { return nil }
-////			guard case let .leaf(leaf) = currentNode.kind else { preconditionFailure() }
-////
-////			if index == leaf.records.endIndex {
-////				return nil
-////			}
-////
-////			let value = leaf.records[index]
-////
-////			index = leaf.records.index(after: index)
-////			if index >= leaf.records.endIndex {
-////				node = leaf.next
-////			}
-////
-////			return value
-////		}
-////	}
-////
-////	public func makeIterator() -> Iterator {
-////		Iterator(node: root)
-////	}
-////}
-//
-//extension DependantList {
-//	struct Leaf {
-//		var records: [Record]
-//		var next: Node?
-//
-//		var count: Int {
-//			records.count
-//		}
-//	}
-//
-//	struct Internal {
-//	}
-//
-//	final class Node {
-//		enum Kind {
-//			case internalNode(Internal)
-//			case leaf(Leaf)
-//		}
-//
-//		var kind: Kind
-//
-//		init(kind: Kind) {
-//			self.kind = kind
-//		}
-//	}
-//}
+import DependantCollectionsInternal
+
+public final class DependantList<Value, Weight> where Weight : AdditiveArithmetic {
+	public typealias WeightedValue = DependantArray<Value, Weight>.WeightedValue
+	public typealias Record = DependantArray<Value, Weight>.Record
+	public typealias Predicate = DependantArray<Value, Weight>.Predicate
+
+	typealias LeafStorage = DependantArray<Value, Weight>
+
+	struct Position {
+		let node: Node
+		let index: LeafStorage.Index
+	}
+
+	private var root: Node
+
+	public init(internalCapacity: Int = 10, leafCapacity: Int = 100) {
+		self.root = Node(kind: .leaf(Leaf()))
+	}
+}
+
+extension DependantList {
+	struct Leaf {
+		var indexOffset: Index
+		var records: LeafStorage
+		var next: Node?
+
+		init() {
+			self.indexOffset = 0
+			self.records = LeafStorage()
+			self.next = nil
+		}
+		
+		var count: Int {
+			records.count
+		}
+	}
+
+	final class Node {
+		enum Kind {
+			case internalNode
+			case leaf(Leaf)
+		}
+
+		var kind: Kind
+
+		init(kind: Kind) {
+			self.kind = kind
+		}
+
+		var recordCount: Int {
+			switch self.kind {
+			case .internalNode:
+				0
+			case let .leaf(leaf):
+				leaf.count
+			}
+		}
+	}
+}
+
+extension DependantList {
+	public func append(_ value: WeightedValue) {
+		insert(value, at: endIndex)
+	}
+
+	private func insert(_ value: WeightedValue, at index: Index) {
+		internalInsert(value, using: { $1 >= index })
+	}
+
+	private func internalInsert(_ weighted: WeightedValue, using predicate: Predicate) {
+		let position = findPosition(in: root, using: predicate)
+
+		guard case var .leaf(leaf) = position.node.kind else { preconditionFailure() }
+
+		leaf.records.insert(weighted, at: position.index)
+
+		position.node.kind = .leaf(leaf)
+	}
+
+	private func findPosition(in node: Node, using predicate: Predicate) -> Position {
+		switch node.kind {
+		case let .leaf(leaf):
+			let offset = leaf.indexOffset
+			let idx = leaf.records.binarySearch(predicate: { predicate($0, $1 + offset) })
+
+			return Position(node: node, index: idx ?? leaf.records.endIndex)
+		case .internalNode:
+			fatalError()
+		}
+	}
+
+	private func findPosition(in node: Node, at index: Index) -> Position {
+		switch node.kind {
+		case let .leaf(leaf):
+			let offset = leaf.indexOffset
+			return Position(node: node, index: index - offset)
+		case .internalNode:
+			fatalError()
+		}
+	}
+
+	public func replace(_ weighted: WeightedValue, at index: Index) {
+		let position = findPosition(in: root, at: index)
+
+		guard case var .leaf(leaf) = position.node.kind else { preconditionFailure() }
+
+		leaf.records.replace(weighted, at: position.index)
+
+		position.node.kind = .leaf(leaf)
+	}
+}
+
+extension DependantList where Weight : Comparable {
+
+}
+
+extension DependantList : Sequence {
+	public struct Iterator : IteratorProtocol {
+		private var node: Node?
+		private var index: Array.Index
+
+		init(node: Node) {
+			self.node = node
+
+			guard case let .leaf(leaf) = node.kind else { preconditionFailure() }
+
+			self.index = leaf.records.startIndex
+		}
+
+		public mutating func next() -> Record? {
+			guard let currentNode = node else { return nil }
+			guard case let .leaf(leaf) = currentNode.kind else { preconditionFailure() }
+
+			if index == leaf.records.endIndex {
+				return nil
+			}
+
+			let value = leaf.records[index]
+
+			index = leaf.records.index(after: index)
+			if index >= leaf.records.endIndex {
+				node = leaf.next
+			}
+
+			return value
+		}
+	}
+
+	public func makeIterator() -> Iterator {
+		Iterator(node: root)
+	}
+}
+
+
+extension DependantList : RandomAccessCollection {
+	public typealias Index = Int
+
+	public var startIndex: Index {
+		0
+	}
+
+	public var endIndex: Index {
+		root.recordCount
+	}
+
+	public func index(after i: Index) -> Index {
+		i + 1
+	}
+
+	public subscript(position: Index) -> Record {
+		_read {
+			// TODO: this is totally wrong
+			let pos = findPosition(in: root, at: position)
+
+			guard case let .leaf(leaf) = pos.node.kind else { preconditionFailure() }
+
+			yield leaf.records[pos.index]
+		}
+	}
+}
+

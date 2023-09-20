@@ -10,7 +10,7 @@ final class BinarySearchTests: XCTestCase {
 
 		XCTAssertNil(ascIdx)
 
-		let descIdx = array.binarySearch(direction: .descending, predicate: { value, _ in value == 0 })
+		let descIdx = array.reversed().binarySearch(predicate: { value, _ in value == 0 })
 
 		XCTAssertNil(descIdx)
 	}
@@ -22,9 +22,9 @@ final class BinarySearchTests: XCTestCase {
 
 		XCTAssertEqual(ascIdx, 0)
 
-		let descIdx = array.binarySearch(direction: .descending, predicate: { value, _ in value < 1 })
+		let descIdx = array.reversed().binarySearch(predicate: { value, _ in value < 1 })
 
-		XCTAssertEqual(descIdx, 0)
+		XCTAssertEqual(array.index(before: descIdx!.base), 0)
 	}
 
 	func testNotFoundInSingleElementArray() {
@@ -34,7 +34,7 @@ final class BinarySearchTests: XCTestCase {
 
 		XCTAssertNil(ascIdx)
 
-		let descIdx = array.binarySearch(direction: .descending, predicate: { value, _ in value == 1 })
+		let descIdx = array.reversed().binarySearch(predicate: { value, _ in value == 1 })
 
 		XCTAssertNil(descIdx)
 	}
@@ -46,9 +46,9 @@ final class BinarySearchTests: XCTestCase {
 
 		XCTAssertEqual(ascIdx, 0)
 
-		let descIdx = array.binarySearch(direction: .descending, predicate: { value, _ in value < 1 })
+		let descIdx = array.reversed().binarySearch(predicate: { value, _ in value < 1 })
 
-		XCTAssertEqual(descIdx, 0)
+		XCTAssertEqual(array.index(before: descIdx!.base), 0)
 	}
 
 	func testSecondMatchInTwoElementArray() {
@@ -58,9 +58,9 @@ final class BinarySearchTests: XCTestCase {
 
 		XCTAssertEqual(ascIdx, 1)
 
-		let descIdx = array.binarySearch(direction: .descending, predicate: { value, _ in value < 2 })
+		let descIdx = array.reversed().binarySearch(predicate: { value, _ in value < 2 })
 
-		XCTAssertEqual(descIdx, 1)
+		XCTAssertEqual(array.index(before: descIdx!.base), 1)
 	}
 
 	func testNoMatchInTwoElementArray() {
@@ -70,7 +70,7 @@ final class BinarySearchTests: XCTestCase {
 
 		XCTAssertNil(ascIdx)
 
-		let descIdx = array.binarySearch(direction: .descending, predicate: { value, _ in value < 0 })
+		let descIdx = array.reversed().binarySearch(predicate: { value, _ in value < 0 })
 
 		XCTAssertNil(descIdx)
 	}
@@ -82,9 +82,9 @@ final class BinarySearchTests: XCTestCase {
 
 		XCTAssertEqual(ascIdx, 0)
 
-		let descIdx = array.binarySearch(direction: .descending, predicate: { value, _ in value == 1 })
+		let descIdx = array.reversed().binarySearch(predicate: { value, _ in value == 1 })
 
-		XCTAssertEqual(descIdx, 2)
+		XCTAssertEqual(array.index(before: descIdx!.base), 2)
 	}
 
 	func testFirstMatchInThreeElementArray() {
@@ -94,9 +94,9 @@ final class BinarySearchTests: XCTestCase {
 
 		XCTAssertEqual(ascIdx, 0)
 
-		let descIdx = array.binarySearch(direction: .descending, predicate: { value, _ in value < 2 })
+		let descIdx = array.reversed().binarySearch(predicate: { value, _ in value < 2 })
 
-		XCTAssertEqual(descIdx, 0)
+		XCTAssertEqual(array.index(before: descIdx!.base), 0)
 	}
 
 	func testFourElements() {
@@ -106,9 +106,9 @@ final class BinarySearchTests: XCTestCase {
 
 		XCTAssertEqual(ascIdx, 2)
 
-		let descIdx = array.binarySearch(direction: .descending, predicate: { value, _ in value < 4 })
+		let descIdx = array.reversed().binarySearch(predicate: { value, _ in value < 4 })
 
-		XCTAssertEqual(descIdx, 2)
+		XCTAssertEqual(array.index(before: descIdx!.base), 2)
 	}
 
 	func testFirstMatchWithFourElements() {
@@ -118,10 +118,8 @@ final class BinarySearchTests: XCTestCase {
 
 		XCTAssertEqual(ascIdx, 0)
 
-		let descIdx = array.binarySearch(direction: .descending, predicate: { value, _ in value < 2 })
+		let descIdx = array.reversed().binarySearch(predicate: { value, _ in value < 2 })
 
-		XCTAssertEqual(descIdx, 0)
+		XCTAssertEqual(array.index(before: descIdx!.base), 0)
 	}
 }
-
-

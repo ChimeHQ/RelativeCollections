@@ -1,3 +1,5 @@
+import DependantCollectionsInternal
+
 public struct DependantArray<Value, Weight> where Weight : AdditiveArithmetic {
 	public typealias Predicate = (Record, Index) -> Bool
 	private typealias Storage = ContiguousArray<Record>
@@ -16,6 +18,18 @@ public struct DependantArray<Value, Weight> where Weight : AdditiveArithmetic {
 		public let value: Value
 		public let weight: Weight
 		public internal(set) var dependency: Weight
+
+		init(value: Value, weight: Weight, dependency: Weight) {
+			self.value = value
+			self.weight = weight
+			self.dependency = dependency
+		}
+
+		init(weightedValue weighted: WeightedValue, dependency: Weight) {
+			self.value = weighted.value
+			self.weight = weighted.weight
+			self.dependency = dependency
+		}
 	}
 
 	private var storage = Storage()
@@ -54,12 +68,10 @@ extension DependantArray {
 
 extension DependantArray {
 	public mutating func append(_ value: WeightedValue) {
-		let idx = storage.endIndex
-
-		insert(value, at: idx)
+		insert(value, at: endIndex)
 	}
 
-	private mutating func insert(_ value: WeightedValue, at index: Index) {
+	mutating func insert(_ value: WeightedValue, at index: Index) {
 		let previousWeight = findDependency(for: index)
 
 		let record = Record(value: value.value, weight: value.weight, dependency: previousWeight)
@@ -112,7 +124,7 @@ extension DependantArray where Weight : Comparable {
 		let idx = storage.binarySearch(predicate: predicate) ?? storage.endIndex
 
 		insert(value, at: idx)
-		
+
 		// now, verify that the array is still in sorted order
 		let insertedDep = storage[idx].dependency
 
@@ -154,7 +166,6 @@ extension DependantArray : Sequence {
 	}
 }
 
-
 extension DependantArray : RandomAccessCollection {
 	public typealias Index = Int
 
@@ -184,6 +195,13 @@ extension DependantArray.WeightedValue : Sendable where Value : Sendable, Weight
 extension DependantArray.WeightedValue : CustomDebugStringConvertible {
 	public var debugDescription: String {
 		"{\(self.value), \(self.weight)}"
+	}
+}
+
+extension DependantArray.WeightedValue where Value == Weight {
+	public init(weight: Weight) {
+		self.value = weight
+		self.weight = weight
 	}
 }
 
