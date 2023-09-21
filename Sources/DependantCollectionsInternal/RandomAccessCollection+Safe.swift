@@ -28,4 +28,14 @@ extension RandomAccessCollection {
 
 		return self[position]
 	}
+
+	public var lastIndex: Index? {
+		let prevIdx = index(before: endIndex)
+
+		if prevIdx < startIndex {
+			return nil
+		}
+
+		return prevIdx
+	}
 }

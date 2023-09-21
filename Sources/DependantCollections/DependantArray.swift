@@ -32,9 +32,14 @@ public struct DependantArray<Value, Weight> where Weight : AdditiveArithmetic {
 		}
 	}
 
-	private var storage = Storage()
+	private var storage: Storage
 
 	public init() {
+		self.storage = Storage()
+	}
+
+	public init(_ slice: Slice<Self>) {
+		self.storage = Storage(slice)
 	}
 }
 
