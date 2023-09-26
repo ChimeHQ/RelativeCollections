@@ -1,7 +1,8 @@
 import DependantCollectionsInternal
 
-public struct DependantArray<Value, Weight> where Weight : AdditiveArithmetic {
+public struct DependantArray<Value, Weight> where Weight : Comparable {
 	public typealias Predicate = (Record, Index) -> Bool
+	public typealias WeightOperator = (Weight, Weight) -> Weight
 	private typealias Storage = ContiguousArray<Record>
 
 	public struct WeightedValue {
@@ -33,27 +34,58 @@ public struct DependantArray<Value, Weight> where Weight : AdditiveArithmetic {
 	}
 
 	private var storage: Storage
+	let configuration: Configuration
 
-	public init() {
+	public init(configuration: Configuration) {
 		self.storage = Storage()
+		self.configuration = configuration
 	}
 
 	public init(_ slice: Slice<Self>) {
 		self.storage = Storage(slice)
+		self.configuration = slice.base.configuration
+	}
+}
+
+extension DependantArray {
+	public struct Configuration {
+		public let initial: Weight
+		public let add: WeightOperator
+		public let subtract: WeightOperator
+
+		public init(initial: Weight, add: @escaping WeightOperator, subtract: @escaping WeightOperator) {
+			self.initial = initial
+			self.add = add
+			self.subtract = subtract
+		}
+	}
+}
+
+extension DependantArray.Configuration where Weight : AdditiveArithmetic {
+	public init() {
+		self.initial = Weight.zero
+		self.add = { $0 + $1 }
+		self.subtract = { $0 - $1 }
+	}
+}
+
+extension DependantArray where Weight : AdditiveArithmetic {
+	public init() {
+		self.init(configuration: .init())
 	}
 }
 
 extension DependantArray {
 	private func findDependency(for position: Int) -> Weight {
 		guard let record = storage[before: position] else {
-			return Weight.zero
+			return configuration.initial
 		}
 
-		return record.weight + record.dependency
+		return configuration.add(record.weight, record.dependency)
 	}
 
 	private mutating func applyDelta(_ delta: Weight, after index: Index) {
-		if delta == Weight.zero {
+		if delta == configuration.initial {
 			return
 		}
 
@@ -61,12 +93,12 @@ extension DependantArray {
 	}
 
 	private mutating func applyDelta(_ delta: Weight, startingAt index: Index) {
-		if delta == Weight.zero {
+		if delta == configuration.initial {
 			return
 		}
 
 		for updateIndex in index..<storage.endIndex {
-			storage[updateIndex].dependency += delta
+			storage[updateIndex].dependency = configuration.add(storage[updateIndex].dependency, delta)
 		}
 	}
 }
@@ -101,7 +133,7 @@ extension DependantArray {
 
 		storage.remove(at: index)
 
-		let delta = Weight.zero - record.weight
+		let delta = configuration.subtract(configuration.initial, record.weight)
 
 		applyDelta(delta, startingAt: index)
 
@@ -118,7 +150,7 @@ extension DependantArray {
 		storage[index] = record
 
 		// compute delta, and update affected records
-		let delta = value.weight - current.weight
+		let delta = configuration.subtract(value.weight, current.weight)
 
 		applyDelta(delta, after: index)
 	}
@@ -193,7 +225,7 @@ extension DependantArray : RandomAccessCollection {
 	}
 }
 
-extension DependantArray.WeightedValue : Equatable where Value : Equatable {}
+extension DependantArray.WeightedValue : Equatable where Value : Equatable, Weight : Equatable {}
 extension DependantArray.WeightedValue : Hashable where Value : Hashable, Weight : Hashable {}
 extension DependantArray.WeightedValue : Sendable where Value : Sendable, Weight : Sendable {}
 
@@ -210,7 +242,7 @@ extension DependantArray.WeightedValue where Value == Weight {
 	}
 }
 
-extension DependantArray.Record : Equatable where Value : Equatable {}
+extension DependantArray.Record : Equatable where Value : Equatable, Weight : Equatable {}
 extension DependantArray.Record : Hashable where Value : Hashable, Weight : Hashable {}
 extension DependantArray.Record : Sendable where Value : Sendable, Weight : Sendable {}
 

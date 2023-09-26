@@ -1,9 +1,10 @@
 import DependantCollectionsInternal
 
-public final class DependantList<Value, Weight> where Weight : AdditiveArithmetic {
+public final class DependantList<Value, Weight> where Weight : Comparable {
 	public typealias WeightedValue = DependantArray<Value, Weight>.WeightedValue
 	public typealias Record = DependantArray<Value, Weight>.Record
 	public typealias Predicate = (Weight, Index) -> Bool
+	public typealias WeightOperator = (Weight, Weight) -> Weight
 
 	typealias LeafStorage = DependantArray<Value, Weight>
 
@@ -12,17 +13,56 @@ public final class DependantList<Value, Weight> where Weight : AdditiveArithmeti
 		let index: LeafStorage.Index
 	}
 
-	struct Capacity {
-		let intern: Int
-		let leaf: Int
+	private var root: Node
+	let configuration: Configuration
+
+	public init(configuration: Configuration) {
+		self.configuration = configuration
+		self.root = Node(kind: .leaf(Leaf(configuration: configuration.leafConfiguration)))
+	}
+}
+
+extension DependantList {
+	public struct Capacity {
+		public let intern: Int
+		public let leaf: Int
+
+		public init(leaf: Int = 100, intern: Int = 100) {
+			self.leaf = leaf
+			self.intern = intern
+		}
 	}
 
-	private var root: Node
-	let capacity: Capacity
+	public struct Configuration {
+		public let capacity: Capacity
+		let leafConfiguration: LeafStorage.Configuration
 
-	public init(internalCapacity: Int = 10, leafCapacity: Int = 100) {
-		self.capacity = Capacity(intern: internalCapacity, leaf: leafCapacity)
-		self.root = Node(kind: .leaf(Leaf()))
+		public init(
+			capacity: Capacity = .init(),
+			initial: Weight,
+			add: @escaping WeightOperator,
+			subtract: @escaping WeightOperator
+		) {
+			self.capacity = capacity
+			self.leafConfiguration = .init(initial: initial, add: add, subtract: subtract)
+		}
+
+		public var initial: Weight {
+			leafConfiguration.initial
+		}
+	}
+}
+
+extension DependantList.Configuration where Weight : AdditiveArithmetic {
+	public init(capacity: DependantList.Capacity = .init()) {
+		self.capacity = capacity
+		self.leafConfiguration = .init()
+	}
+}
+
+extension DependantList where Weight : AdditiveArithmetic {
+	public convenience init() {
+		self.init(configuration: .init())
 	}
 }
 
@@ -31,8 +71,8 @@ extension DependantList {
 		var records: LeafStorage
 		var next: Node?
 
-		init() {
-			self.records = LeafStorage()
+		init(configuration: LeafStorage.Configuration) {
+			self.records = LeafStorage(configuration: configuration)
 			self.next = nil
 		}
 
@@ -46,7 +86,7 @@ extension DependantList {
 		}
 
 		var weight: Weight {
-			records.first?.weight ?? .zero
+			records.first?.weight ?? records.configuration.initial
 		}
 
 		mutating func split(with capacity: Int) -> Node {
@@ -77,8 +117,8 @@ extension DependantList {
 		var recordCount: Int
 		var nodes: ContiguousArray<Node>
 
-		init() {
-			self.weight = .zero
+		init(weight: Weight) {
+			self.weight = weight
 			self.recordCount = 0
 			self.nodes = ContiguousArray()
 		}
@@ -190,8 +230,8 @@ extension DependantList {
 
 			node.kind = .leaf(leaf)
 
-			if leaf.count > capacity.leaf {
-				let newNode = node.split(with: capacity)
+			if leaf.count > configuration.capacity.leaf {
+				let newNode = node.split(with: configuration.capacity)
 
 				addChild(newNode, to: parent, using: predicate)
 			}
@@ -265,7 +305,7 @@ extension DependantList {
 		case .leaf:
 			preconditionFailure()
 		case nil:
-			var intern = Internal()
+			var intern = Internal(weight: configuration.initial)
 
 			intern.nodes = [root, newNode]
 			intern.recordCount = newNode.recordCount + root.recordCount
