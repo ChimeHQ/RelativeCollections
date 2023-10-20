@@ -1,5 +1,13 @@
 # DependantCollections
 
+## Integration
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/ChimeHQ/DependantCollections", branch: "main")
+]
+```
+
 ## Contributing and Collaboration
 
 I'd love to hear from you! Get in touch via an issue or pull request.
