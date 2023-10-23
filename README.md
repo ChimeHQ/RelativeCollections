@@ -1,4 +1,5 @@
 # DependantCollections
+Swift collection types that support efficient storage of order-relative values
 
 ## Integration
 
@@ -7,6 +8,64 @@ dependencies: [
     .package(url: "https://github.com/ChimeHQ/DependantCollections", branch: "main")
 ]
 ```
+
+## Concepts
+
+All the strutures here store relative data. This means that a given value is always dependent on the values that came before. If you're data fits into this model, it can help to improve the efficiency of applying mutations.
+
+These are very similar in concept to a [Rope](https://en.wikipedia.org/wiki/Rope_(data_structure)), and terminology used is similar. Data is split into two components: `Value` and a `Weight`. The `Value` is independent, per-element data. The `Weight` is the per-element contribution. The full element data is reconstructed by combining all preceeding elements `Weight`.
+
+To operate on the element `Weight`s, these collections need user-defined functions to perform addition, subtraction, as well as finding an initial value. However, if `Weight` conforms to Swift's `AdditiveArithmetic` protocol, most of these operations can be inferred.
+
+## Usage
+
+Let's take a look at some real-world usage of a structure like this. Consider an application that works with text and needs to store information about each line in a document. Let's keep it simple and just record the range of each line, as `(start, length)`. This presents a problem when the text changes. Because the `start` value is absolute, you have update all subsequent entries.
+
+This is a great example of relative data! The `length` is the independent value. As long as an edit does not occur within the line, the `length` value is not affect. The relative value is the `start` - it is defined as the sum of all preceeding lengths.
+
+Let's define a `Metrics` type that stores information about a line of text. You could put all kinds of stuff in here, like the height of a line, if it contains any non-UTF-8 data. But, let's keep it simple and just record offsets to any leading and trailing whitespace.
+
+This `Metrics` type will be our independent `Value`. Line length, expressed as an `Int` with make up the relative `Weight`.
+
+```swift
+struct Metrics {
+    let leadingWhitespace: Int
+    let trailingWhitespace: Int
+}
+
+let array = DependantArray<Metrics, Int>()
+
+
+```
+
+## Structures
+
+### `DependantArray`
+
+A `DependantArray` is the simplest type. It stores a `Value` and `Weight` in a plain array. But do not be deceived! Arrays are extremely fast when N is small, and N is usually small. On its own, this type can be handy for many applications. But, it is also used as a building block for more complex things.
+
+`DependantArray` conforms to `Sequence` and `RandomAccessCollection`. It supports CoW, just like other Swift collections.
+
+### `DependantList`
+
+This is a position-addressable type, like an array. However, internally it stores data in a [B+Tree](https://en.wikipedia.org/wiki/B%2B_tree). That gets you logarithmic insertion and deletion.
+
+`DependantList` conforms to `Sequence` and `RandomAccessCollection`.
+
+However, this is a reference type and does not support CoW. I started looking into it more, but just getting this to work was hard enough.
+
+### Notes on Data Structures
+
+You might be wondering why I didn't use a [Red-black tree](https://en.wikipedia.org/wiki/Red–black_tree) for this. Red-black tree's are great! They may be the simpliest self-balancing tree structure known. However, they do make some trade-offs. Compared to something like a [B-tree](https://en.wikipedia.org/wiki/B-tree), they need a lot more pointers. This adds to memory overhead and isn't great for locality of reference. This is basically why B-Tree's were invented in the first place. They also will compare unfavorably to an array for small N. And as they say, N is usually small. A B+Tree addresses both these limitations, though of course it is a lot more complex internally.
+
+At one point, I got excited about trying out a [skip list](https://en.wikipedia.org/wiki/Skip_list) for this, because skip lists are cool. I had a tough time getting my head around how to do this at all, and skip lists just made it harder.
+
+Typically, when faced with this kind of problem you have to measure. Carefully. But, the alure of optimization-without-rigor is powerful and I gave in. I don't know if this structure is actually faster than a RBTree or standard B-Tree. But I learned a lot. I hope that one day [Swift Collections](https://github.com/apple/swift-collections) provides a suitable B+Tree or Rope.
+
+## Related Projects
+
+- [The Swift Algorithm Club](https://github.com/kodecocodes/swift-algorithm-club)
+- [SummarizedCollection](https://github.com/jessegrosjean/SummarizedCollection)
 
 ## Contributing and Collaboration
 
