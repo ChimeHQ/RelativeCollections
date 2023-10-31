@@ -145,7 +145,7 @@ extension DependantArray {
 
 		storage.insert(record, at: index)
 
-		let delta = value.weight 
+		let delta = value.weight
 
 		applyDelta(delta, startingAt: storage.index(after: index))
 	}
