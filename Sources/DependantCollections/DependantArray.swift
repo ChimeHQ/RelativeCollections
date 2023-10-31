@@ -6,8 +6,8 @@ public struct DependantArray<Value, Weight> where Weight : Comparable {
 	private typealias Storage = ContiguousArray<Record>
 
 	public struct WeightedValue {
-		public let value: Value
-		public let weight: Weight
+		public var value: Value
+		public var weight: Weight
 
 		public init(value: Value, weight: Weight) {
 			self.value = value
@@ -16,20 +16,27 @@ public struct DependantArray<Value, Weight> where Weight : Comparable {
 	}
 
 	public struct Record {
-		public let value: Value
-		public let weight: Weight
+		var weightedValue: WeightedValue
 		public internal(set) var dependency: Weight
 
 		init(value: Value, weight: Weight, dependency: Weight) {
-			self.value = value
-			self.weight = weight
+			self.weightedValue = WeightedValue(value: value, weight: weight)
 			self.dependency = dependency
 		}
 
-		init(weightedValue weighted: WeightedValue, dependency: Weight) {
-			self.value = weighted.value
-			self.weight = weighted.weight
+		init(weightedValue: WeightedValue, dependency: Weight) {
+			self.weightedValue = weightedValue
 			self.dependency = dependency
+		}
+
+		public var value: Value {
+			get { weightedValue.value }
+			set { weightedValue.value = newValue }
+		}
+
+		public var weight: Weight {
+			get { weightedValue.weight }
+			set { weightedValue.weight = newValue }
 		}
 	}
 
@@ -101,6 +108,29 @@ extension DependantArray {
 			storage[updateIndex].dependency = configuration.add(storage[updateIndex].dependency, delta)
 		}
 	}
+
+	/// Factors out the starting dependency from all stored records.
+	///
+	/// - Returns: The first record dependency, or the initial weight if the array is empty.
+	@discardableResult
+	public mutating func extractInitialDependency() -> Weight {
+		guard let first = storage.first else {
+			return configuration.initial
+		}
+
+		let initialDependency = first.dependency
+		let delta = configuration.subtract(configuration.initial, initialDependency)
+
+		applyDelta(delta, startingAt: storage.startIndex)
+
+		return initialDependency
+	}
+
+	public mutating func subtract(_ weight: Weight) {
+		for updateIndex in storage.indices {
+			storage[updateIndex].dependency = configuration.subtract(storage[updateIndex].dependency, weight)
+		}
+	}
 }
 
 extension DependantArray {
@@ -145,7 +175,7 @@ extension DependantArray {
 
 		// overwrite it
 		let previousWeight = findDependency(for: index)
-		let record = Record(value: value.value, weight: value.weight, dependency: previousWeight)
+		let record = Record(weightedValue: value, dependency: previousWeight)
 
 		storage[index] = record
 

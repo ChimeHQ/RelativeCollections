@@ -127,6 +127,18 @@ final class DependantArrayTests: XCTestCase {
 
 		XCTAssertEqual(array.map { $0.value }, expected)
 	}
+
+    func testSubscriptAndRecordAreTheSame() {
+        var array = TestArray()
+
+        for length in [1, 2, 3, 4] {
+            array.append(.init(value: length, weight: length))
+        }
+
+        XCTAssertEqual(array[0], array.record(at: 0))
+        XCTAssertEqual(array[1], array.record(at: 1))
+        XCTAssertEqual(array[2], array.record(at: 2))
+    }
 }
 
 extension DependantArrayTests {
