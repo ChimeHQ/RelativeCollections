@@ -13,7 +13,7 @@ dependencies: [
 
 All the strutures here store relative data. This means that a given value has some kind of dependency on the values that came before. If you're data fits into this model, it can help to improve the efficiency of certain operations.
 
-These are very similar in concept to a [Rope](https://en.wikipedia.org/wiki/Rope_(data_structure)). But, a rope is typically used to store text data, these collections are more general-purpose. But, the terminology used is similar. Data is split into two components: `Value` and a `Weight`. The `Value` is independent, per-element data. The `Weight` is the per-element contribution. The full element data is reconstructed by combining all preceding elements `Weight`.
+These are very similar in concept to a [Rope](https://en.wikipedia.org/wiki/Rope_(data_structure)). And while these structures are just a little more generalized, the terminology used is similar. Data is split into two components: `Value` and a `Weight`. The `Value` is independent, per-element data. The `Weight` is the per-element contribution. The full element data is reconstructed by combining all preceding elements `Weight`.
 
 To operate on the element `Weight`s, these collections need user-defined functions to perform addition, subtraction, as well as finding an initial value. However, if `Weight` conforms to Swift's `AdditiveArithmetic` protocol, most of these operations can be inferred.
 
