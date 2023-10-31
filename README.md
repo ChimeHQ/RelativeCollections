@@ -11,17 +11,17 @@ dependencies: [
 
 ## Concepts
 
-All the strutures here store relative data. This means that a given value is always dependent on the values that came before. If you're data fits into this model, it can help to improve the efficiency of applying mutations.
+All the strutures here store relative data. This means that a given value has some kind of dependency on the values that came before. If you're data fits into this model, it can help to improve the efficiency of certain operations.
 
-These are very similar in concept to a [Rope](https://en.wikipedia.org/wiki/Rope_(data_structure)), and terminology used is similar. Data is split into two components: `Value` and a `Weight`. The `Value` is independent, per-element data. The `Weight` is the per-element contribution. The full element data is reconstructed by combining all preceeding elements `Weight`.
+These are very similar in concept to a [Rope](https://en.wikipedia.org/wiki/Rope_(data_structure)). But, a rope is typically used to store text data, these collections are more general-purpose. But, the terminology used is similar. Data is split into two components: `Value` and a `Weight`. The `Value` is independent, per-element data. The `Weight` is the per-element contribution. The full element data is reconstructed by combining all preceding elements `Weight`.
 
 To operate on the element `Weight`s, these collections need user-defined functions to perform addition, subtraction, as well as finding an initial value. However, if `Weight` conforms to Swift's `AdditiveArithmetic` protocol, most of these operations can be inferred.
 
 ## Usage
 
-Let's take a look at some real-world usage of a structure like this. Consider an application that works with text and needs to store information about each line in a document. Let's keep it simple and just record the range of each line, as `(start, length)`. This presents a problem when the text changes. Because the `start` value is absolute, you have update all subsequent entries.
+Let's take a look at some real-world usage of a structure like this. Consider an application that works with text and needs to store information about each line in a document. Let's keep it simple and just record the range of each line, as `(start, length)`. This presents a problem when the text changes. Because the `start` value is absolute, you have update all subsequent entries on an edit.
 
-This is a great example of relative data! The `length` is the independent value. As long as an edit does not occur within the line, the `length` value is not affect. The relative value is the `start` - it is defined as the sum of all preceeding lengths.
+This is a great example of relative data! The `length` is the independent value. As long as an edit does not occur within the line, the `length` value is not affected by edits. The relative value is the `start` - it is defined as the sum of all preceding lengths.
 
 Let's define a `Metrics` type that stores information about a line of text. You could put all kinds of stuff in here, like the height of a line, if it contains any non-UTF-8 data. But, let's keep it simple and just record offsets to any leading and trailing whitespace.
 
@@ -31,11 +31,61 @@ This `Metrics` type will be our independent `Value`. Line length, expressed as a
 struct Metrics {
     let leadingWhitespace: Int
     let trailingWhitespace: Int
+    
+    init(_ leading: Int, trailing: Int) {
+        self.leadingWhitespace = leading
+        self.trailingWhitespace = trailing
+    }
 }
+```
 
+To get this working, you also need to define a few core operations on the weight values. You can do that through a `Configuration` property.
+
+```swift
+let config = DependantArray<Metrics, Int>.Configuration(
+    initial: 0,
+    add: { lengthA, lengthB in lengthA + lengthB },
+    subtract:  lengthA, lengthB in lengthA - lengthB }
+)
+```
+
+All this ceremony allows for very abstract `Weight` types. However, we can do better for types that implement `AdditiveArithmetic`, which `Int` does! In that case, `Configuration` has predefined behavior that will automatically do the right thing. Making your own custom types conform to `AdditiveArithmetic` will allow it to work the same way.
+
+Let's pretend we'd like to describe this text:
+
+```
+   abc   
+  defghi
+ jk
+```
+
+We can do that by creating our array with the right types and appending some `WeightedValue` types in.
+
+```
 let array = DependantArray<Metrics, Int>()
 
+array.append(
+    WeightedValue(value: Metrics(3, 3), weight: 3),
+)
 
+array.append(
+    WeightedValue(value: Metrics(2, 0), weight: 6),
+)
+
+array.append(
+    WeightedValue(value: Metrics(1, 0), weight: 2),
+)
+
+```
+
+Now that our data is loaded, we can read out values. However, we do need to do a little work to reconstruct our data.
+
+```
+let record = array[2]
+
+let start = record.dependency
+let length = record.weight
+let metrics = record.value
 ```
 
 ## Structures
@@ -56,7 +106,7 @@ However, this is a reference type and does not support CoW. I started looking in
 
 ### Notes on Data Structures
 
-You might be wondering why I didn't use a [Red-black tree](https://en.wikipedia.org/wiki/Red–black_tree) for this. Red-black tree's are great! They may be the simpliest self-balancing tree structure known. However, they do make some trade-offs. Compared to something like a [B-tree](https://en.wikipedia.org/wiki/B-tree), they need a lot more pointers. This adds to memory overhead and isn't great for locality of reference. This is basically why B-Tree's were invented in the first place. They also will compare unfavorably to an array for small N. And as they say, N is usually small. A B+Tree addresses both these limitations, though of course it is a lot more complex internally.
+You might be wondering why I didn't use a [Red-black tree](https://en.wikipedia.org/wiki/Red–black_tree) for this. Red-black tree's are great! They may be the simplest self-balancing tree structure known. And, they can totally be used in this relative-data context. However, they do make some trade-offs. Compared to something like a [B-tree](https://en.wikipedia.org/wiki/B-tree), they need a lot more pointers. This adds to memory overhead and isn't great for locality of reference. This is basically why B-Tree's were invented in the first place. They also will compare unfavorably to an array for small N. And as they say, N is usually small. A B+Tree addresses both these limitations, though of course it is a lot more complex internally.
 
 At one point, I got excited about trying out a [skip list](https://en.wikipedia.org/wiki/Skip_list) for this, because skip lists are cool. I had a tough time getting my head around how to do this at all, and skip lists just made it harder.
 
@@ -66,6 +116,7 @@ Typically, when faced with this kind of problem you have to measure. Carefully. 
 
 - [The Swift Algorithm Club](https://github.com/kodecocodes/swift-algorithm-club)
 - [SummarizedCollection](https://github.com/jessegrosjean/SummarizedCollection)
+- [Swift Collections](https://github.com/apple/swift-collections)
 
 ## Contributing and Collaboration
 
