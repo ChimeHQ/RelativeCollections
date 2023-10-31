@@ -19,13 +19,13 @@ To operate on the element `Weight`s, these collections need user-defined functio
 
 ## Usage
 
-Let's take a look at some real-world usage of a structure like this. Consider an application that works with text and needs to store information about each line in a document. Let's keep it simple and just record the range of each line, as `(start, length)`. This presents a problem when the text changes. Because the `start` value is absolute, you have update all subsequent entries on an edit.
+Let's take a look at some real-world usage of a structure like this. Consider an application that works with text and needs to store information about each line in a document. You might just record the range of each line as `(start, length)`. This presents a problem when the text changes. Because the `start` value is absolute, you have update all subsequent entries on an edit.
 
-This is a great example of relative data! The `length` is the independent value. As long as an edit does not occur within the line, the `length` value is not affected by edits. The relative value is the `start` - it is defined as the sum of all preceding lengths.
+This is a great example of relative data! The `length` is the independent value. As long as an edit does not occur within the line, a `length` is not affected by edits. The relative value is the `start` - it is defined as the sum of all preceding lengths.
 
-Let's define a `Metrics` type that stores information about a line of text. You could put all kinds of stuff in here, like the height of a line, if it contains any non-UTF-8 data. But, let's keep it simple and just record offsets to any leading and trailing whitespace.
+Here, `Metrics` is a type that stores information about a line of text. You could put all kinds of stuff in here, like the height of a line, if it contains any non-UTF-8 data. But, let's keep it simple and just record offsets to any leading and trailing whitespace.
 
-This `Metrics` type will be our independent `Value`. Line length, expressed as an `Int` with make up the relative `Weight`.
+This `Metrics` type will be our independent `Value`. Line length, expressed as an `Int` with make up the relative `Weight`. This works because a line's absolute starting position is the sum of all preceding line lengths.
 
 ```swift
 struct Metrics {
@@ -39,7 +39,7 @@ struct Metrics {
 }
 ```
 
-To get this working, you also need to define a few core operations on the weight values. You can do that through a `Configuration` property.
+To get this working, we also need to define a few core operations on the `Weight`. You can do that through a `Configuration` property.
 
 ```swift
 let config = DependantArray<Metrics, Int>.Configuration(
@@ -51,7 +51,9 @@ let config = DependantArray<Metrics, Int>.Configuration(
 
 All this ceremony allows for very abstract `Weight` types. However, we can do better for types that implement `AdditiveArithmetic`, which `Int` does! In that case, `Configuration` has predefined behavior that will automatically do the right thing. Making your own custom types conform to `AdditiveArithmetic` will allow it to work the same way.
 
-Let's pretend we'd like to describe this text:
+This allows us to define a configuration with a default initializer. And, this is also set as a default for `DependantArray`, so in this case we can avoid dealing with configuration entirely.
+
+On to some example data! Let's say we'd like to store metrics for this text:
 
 ```
    abc   
@@ -65,27 +67,27 @@ We can do that by creating our array with the right types and appending some `We
 let array = DependantArray<Metrics, Int>()
 
 array.append(
-    WeightedValue(value: Metrics(3, 3), weight: 3),
+    WeightedValue(value: Metrics(3, 3), weight: 9),
 )
 
 array.append(
-    WeightedValue(value: Metrics(2, 0), weight: 6),
+    WeightedValue(value: Metrics(2, 0), weight: 8),
 )
 
 array.append(
-    WeightedValue(value: Metrics(1, 0), weight: 2),
+    WeightedValue(value: Metrics(1, 0), weight: 3),
 )
 
 ```
 
-Now that our data is loaded, we can read out values. However, we do need to do a little work to reconstruct our data.
+Now that our data is loaded, we can read out values. And with a little work, we can reconstruct our desired values.
 
 ```
 let record = array[2]
 
-let start = record.dependency
-let length = record.weight
-let metrics = record.value
+let start = record.dependency // 17 (9 + 8)
+let length = record.weight    // 3
+let metrics = record.value.   // Metrics(1, 0)
 ```
 
 ## Structures
