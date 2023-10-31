@@ -63,7 +63,7 @@ On to some example data! Let's say we'd like to store metrics for this text:
 
 We can do that by creating our array with the right types and appending some `WeightedValue` types in.
 
-```
+```swift
 let array = DependantArray<Metrics, Int>()
 
 array.append(
@@ -82,7 +82,7 @@ array.append(
 
 Now that our data is loaded, we can read out values. And with a little work, we can reconstruct our desired values.
 
-```
+```swift
 let record = array[2]
 
 let start = record.dependency // 17 (9 + 8)
