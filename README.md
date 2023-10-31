@@ -94,7 +94,7 @@ let metrics = record.value.   // Metrics(1, 0)
 
 ### `DependantArray`
 
-A `DependantArray` is the simplest type. It stores a `Value` and `Weight` in a plain array. But do not be deceived! Arrays are extremely fast when N is small, and N is usually small. On its own, this type can be handy for many applications. But, it is also used as a building block for more complex things.
+A `DependantArray` is the simplest type. It stores a `Value` and `Weight` in a plain array. On its own, this type can be handy for many applications. But, it is also used as a building block for more complex structures.
 
 `DependantArray` conforms to `Sequence` and `RandomAccessCollection`. It supports CoW, just like other Swift collections.
 
