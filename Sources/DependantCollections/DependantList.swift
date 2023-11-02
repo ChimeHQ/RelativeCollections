@@ -113,7 +113,8 @@ extension DependantList {
 
 		var branch = DependantList.Branch(configuration: configuration.leafConfiguration)
 
-		let rootNodeWeight = Branch.NodeWeight(count: root.count, weight: configuration.initial)
+		let weight = root.weight ?? configuration.initial
+		let rootNodeWeight = Branch.NodeWeight(count: root.count, weight: weight)
 
 		branch.storage.append(.init(value: root, weight: rootNodeWeight))
 		branch.storage.append(newWeightedValue)
@@ -131,7 +132,7 @@ extension DependantList {
 		insert(value, at: index, in: root, parent: nil)
 
 		print("internal rep:")
-		root.recursivePrint(nodeWeight: .init(count: 0, weight: configuration.initial))
+		root.recursivePrint(depth: 0, nodeWeight: .init(count: 0, weight: configuration.initial))
 	}
 
 //	private func recursiveInsert(_ weighted: WeightedValue, in node: NewNode, parent: NewNode?, using predicate: Predicate) {

@@ -67,8 +67,8 @@ extension DependantList {
 		init(configuration: DependantList.Leaf.Storage.Configuration) {
 			let config = Storage.Configuration(
 				initial: NodeWeight(count: 0, weight: configuration.initial),
-				add: { NodeWeight(count: $0.count + $1.count, weight: configuration.add($0.weight, $0.weight)) },
-				subtract: { NodeWeight(count: $0.count - $1.count, weight: configuration.subtract($0.weight, $0.weight)) }
+				add: { NodeWeight(count: $0.count + $1.count, weight: configuration.add($0.weight, $1.weight)) },
+				subtract: { NodeWeight(count: $0.count - $1.count, weight: configuration.subtract($0.weight, $1.weight)) }
 			)
 
 			self.storage = Storage(configuration: config)
@@ -130,7 +130,25 @@ extension DependantList {
 				leaf.storage.count
 			case let .branch(branch):
 //				branch.count
-                0
+                -1
+			}
+		}
+
+		/// The contribution of everything contained in this node.
+		var weight: Weight? {
+			switch kind {
+			case let .leaf(leaf):
+				guard let record = leaf.storage.last else {
+					return leaf.storage.configuration.initial
+				}
+
+				return leaf.storage.configuration.add(record.dependency, record.weight)
+			case let .branch(branch):
+				guard let record = branch.storage.last else {
+					return branch.storage.configuration.initial.weight
+				}
+
+				return branch.storage.configuration.add(record.dependency, record.weight).weight
 			}
 		}
 
@@ -195,7 +213,7 @@ extension DependantList.Node {
 }
 
 extension DependantList.Node {
-	func recursivePrint(depth: Int = 0, nodeWeight: DependantList.Branch.NodeWeight) {
+	func recursivePrint(depth: Int, nodeWeight: DependantList.Branch.NodeWeight) {
 		let padding = String(repeating: "\t", count: depth)
 		let offset = nodeWeight.count
 		let weight = nodeWeight.weight
@@ -205,7 +223,7 @@ extension DependantList.Node {
 			print("\(padding)Branch: \(offset), \(weight), \(count)")
 
 			for record in branch.storage {
-				record.value.recursivePrint(depth: depth + 1, nodeWeight: record.dependency)
+				record.value.recursivePrint(depth: depth + 1, nodeWeight: record.weight)
 			}
 		case let .leaf(leaf):
 			let content = leaf.storage
