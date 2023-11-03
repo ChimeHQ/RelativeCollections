@@ -86,10 +86,18 @@ extension RelativeList {
 		///
 		/// We can avoid reconstructing the full `NodeWeight` object here, because we only need to consider total counts.
 		func localIndex(representing target: Index) -> Index? {
-			storage.binarySearch { branchEntry, storageIndex in
+			let lastIndex = storage.endIndex - 1
+
+			return storage.binarySearch { branchEntry, storageIndex in
 				let totalCount = branchEntry.dependency.count + branchEntry.weight.count
 
-				return target < totalCount
+				// this tricky business here allows for the target exactly one past the end to match, but
+				// only if it is the very last index
+				if lastIndex == storageIndex {
+					return target <= totalCount
+				} else {
+					return target < totalCount
+				}
 			}
 		}
 
