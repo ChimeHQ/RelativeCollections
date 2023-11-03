@@ -1,6 +1,6 @@
 import XCTest
 
-import DependantCollectionsInternal
+import RelativeCollectionsInternal
 
 final class BinarySearchTests: XCTestCase {
 	func testEmptyArray() {

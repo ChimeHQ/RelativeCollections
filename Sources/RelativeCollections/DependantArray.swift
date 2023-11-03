@@ -1,4 +1,4 @@
-import DependantCollectionsInternal
+import RelativeCollectionsInternal
 
 public struct DependantArray<Value, Weight> where Weight : Comparable {
 	public typealias Predicate = (Record, Index) -> Bool

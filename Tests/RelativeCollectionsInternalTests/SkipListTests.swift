@@ -1,6 +1,6 @@
 import XCTest
 
-import DependantCollectionsInternal
+import RelativeCollectionsInternal
 
 // see https://github.com/kodecocodes/swift-algorithm-club/tree/master/Skip-List
 final class SkipListTests: XCTestCase {

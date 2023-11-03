@@ -1,4 +1,4 @@
-import DependantCollectionsInternal
+import RelativeCollectionsInternal
 
 public final class DependantList<Value, Weight> where Weight : Comparable {
 	public typealias WeightedValue = DependantArray<Value, Weight>.WeightedValue

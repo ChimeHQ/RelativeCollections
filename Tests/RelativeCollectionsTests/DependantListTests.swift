@@ -1,6 +1,6 @@
 import XCTest
 
-import DependantCollections
+import RelativeCollections
 
 final class DependantListTests: XCTestCase {
 	typealias TestList = DependantList<Int, Int>

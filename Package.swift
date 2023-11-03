@@ -3,16 +3,16 @@
 import PackageDescription
 
 let package = Package(
-	name: "DependantCollections",
+	name: "RelativeCollections",
 	products: [
-		.library(name: "DependantCollections", targets: ["DependantCollections"]),
+		.library(name: "RelativeCollections", targets: ["RelativeCollections"]),
 	],
 	targets: [
-		.target(name: "DependantCollectionsInternal"),
-		.testTarget(name: "DependantCollectionsInternalTests", dependencies: ["DependantCollectionsInternal"]),
+		.target(name: "RelativeCollectionsInternal"),
+		.testTarget(name: "RelativeCollectionsInternalTests", dependencies: ["RelativeCollectionsInternal"]),
 
-		.target(name: "DependantCollections", dependencies: ["DependantCollectionsInternal"]),
-		.testTarget(name: "DependantCollectionsTests", dependencies: ["DependantCollections"]),
+		.target(name: "RelativeCollections", dependencies: ["RelativeCollectionsInternal"]),
+		.testTarget(name: "RelativeCollectionsTests", dependencies: ["RelativeCollections"]),
 	]
 )
 
