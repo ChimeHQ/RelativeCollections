@@ -63,6 +63,7 @@ extension DependantList {
 		}
 
 		var storage: Storage
+		var count: Int
 
 		init(configuration: DependantList.Leaf.Storage.Configuration) {
 			let config = Storage.Configuration(
@@ -71,11 +72,14 @@ extension DependantList {
 				subtract: { NodeWeight(count: $0.count - $1.count, weight: configuration.subtract($0.weight, $1.weight)) }
 			)
 
-			self.storage = Storage(configuration: config)
+			self.init(storage: Storage(configuration: config), count: 0)
 		}
 
-		init(storage: Storage) {
+		init(storage: Storage, count: Int) {
+			precondition(count >= 0)
+			
 			self.storage = storage
+			self.count = count
 		}
 
 		/// Returns the local branch record index for the node holding a more deeply-nested index.
@@ -85,7 +89,7 @@ extension DependantList {
 			storage.binarySearch { branchEntry, storageIndex in
 				let totalCount = branchEntry.dependency.count + branchEntry.weight.count
 
-				return target <= totalCount
+				return target < totalCount
 			}
 		}
 
@@ -98,13 +102,14 @@ extension DependantList {
 			// update the left node
 			self.storage = Storage(left)
 
-			// create the new (right) node, and deal with the weights
-			var newStorage = Storage(right)
-//			let startWeight = newStorage.extractInitialDependency()
-			let nodeWeight = Branch.NodeWeight(count: right.count, weight: newStorage[0].weight.weight)
-			let newBranch = Branch(storage: newStorage)
+			// create the new (right) node, and deal with the weights/counts
+			let newStorage = Storage(right)
+			let startWeight = newStorage[0].weight.weight
+			let nodeWeight = Branch.NodeWeight(count: right.count, weight: startWeight)
+			let newCount = newStorage.reduce(0, { $0 + $1.weightedValue.weight.count })
+			let newBranch = Branch(storage: newStorage, count: newCount)
 
-			let newNode = Node(kind: .branch(newBranch))
+			let newNode = Node(newBranch)
 
 			return .init(value: newNode, weight: nodeWeight)
 		}
@@ -124,13 +129,17 @@ extension DependantList {
 			self.kind = kind
 		}
 
+		init(_ branch: Branch) {
+			self.kind = .branch(branch)
+		}
+
+		/// All values stored in the entire subtree rooted at this node.
 		var count: Int {
 			switch kind {
 			case let .leaf(leaf):
 				leaf.storage.count
 			case let .branch(branch):
-//				branch.count
-                -1
+				branch.count
 			}
 		}
 

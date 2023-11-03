@@ -67,7 +67,7 @@ extension DependantList where Weight : AdditiveArithmetic {
 extension DependantList {
 	/// Insert a new WeightedValue
 	///
-	/// This will recursively decend down the tree to find the insertion point. It will then also recursively split nodes as needed to maintain the tree balance.
+	/// This will recursively descend down the tree to find the insertion point. It will then also recursively split nodes as needed to maintain the tree balance.
 	func insert(_ weighted: WeightedValue, at target: Index, in node: Node, parent: Node?) {
 		switch node.kind {
  		case var .leaf(leaf):
@@ -76,24 +76,31 @@ extension DependantList {
 			node.kind = .leaf(leaf)
 		case var .branch(branch):
 			guard let entryIndex = branch.localIndex(representing: target) else {
-				preconditionFailure("Index isn't in this node")
+				fatalError()
 			}
 
-			let branchEntry = branch.storage[entryIndex]
+			var branchEntry = branch.storage[entryIndex]
 			let subNode = branchEntry.value
 			let adjustedTarget = target - branchEntry.dependency.count
-			let adjustedWeight = configuration.leafConfiguration.subtract(weighted.weight, branchEntry.weight.weight)
-			let adjustedWeighted = DependantList.WeightedValue(value: weighted.value, weight: adjustedWeight)
 
-			insert(adjustedWeighted, at: adjustedTarget, in: subNode, parent: node)
+			// before we recurse, update the values tracked by this branch entry
+			branch.count += 1
 
-			guard subNode.exceeds(configuration.capacity) == false else { return }
+			let addedWeight = Branch.NodeWeight(count: 1, weight: weighted.weight)
 
-			// subnode is now holding too much, gotta split it
-			let newWeightedValue = subNode.split()
+			branchEntry.weightedValue.weight = branch.storage.configuration.add(branchEntry.weightedValue.weight, addedWeight)
+			branch.storage.replace(branchEntry.weightedValue, at: entryIndex)
 
-			// and on return, we will recursively re-check this value for a needed split
-			branch.storage.insert(newWeightedValue, at: entryIndex)
+			// now recurse
+			insert(weighted, at: adjustedTarget, in: subNode, parent: node)
+
+			if subNode.exceeds(configuration.capacity) {
+				// subnode is now holding too much, gotta split it
+				let newWeightedValue = subNode.split()
+
+				// and on return, we will recursively re-check this value for a needed split
+				branch.storage.insert(newWeightedValue, at: entryIndex)
+			}
 
 			node.kind = .branch(branch)
 		}
@@ -108,6 +115,11 @@ extension DependantList {
 }
 
 extension DependantList {
+	private func recursivePrint() {
+		print("internal rep:")
+		root.recursivePrint(depth: 0, nodeWeight: .init(count: 0, weight: configuration.initial))
+	}
+
 	private func splitRoot() {
 		let newWeightedValue = root.split()
 
@@ -118,6 +130,7 @@ extension DependantList {
 
 		branch.storage.append(.init(value: root, weight: rootNodeWeight))
 		branch.storage.append(newWeightedValue)
+		branch.count = branch.storage.reduce(0, { $0 + $1.weightedValue.weight.count })
 
 		self.root = Node(kind: .branch(branch))
 	}
@@ -131,14 +144,13 @@ extension DependantList {
 	public func insert(_ value: WeightedValue, at index: Index) {
 		insert(value, at: index, in: root, parent: nil)
 
-		print("internal rep:")
-		root.recursivePrint(depth: 0, nodeWeight: .init(count: 0, weight: configuration.initial))
+		recursivePrint()
 	}
 
 //	private func recursiveInsert(_ weighted: WeightedValue, in node: NewNode, parent: NewNode?, using predicate: Predicate) {
 //		let offset = node.indexOffset
 //
-//		let idx = node.index(satisifying: predicate)
+//		let idx = node.index(satisfying: predicate)
 //
 //		switch node.kind {
 //		case var .leaf(leaf):
