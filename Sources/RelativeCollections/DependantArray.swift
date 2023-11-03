@@ -1,6 +1,6 @@
 import RelativeCollectionsInternal
 
-public struct DependantArray<Value, Weight> where Weight : Comparable {
+public struct RelativeArray<Value, Weight> where Weight : Comparable {
 	public typealias Predicate = (Record, Index) -> Bool
 	public typealias WeightOperator = (Weight, Weight) -> Weight
 	private typealias Storage = ContiguousArray<Record>
@@ -54,7 +54,7 @@ public struct DependantArray<Value, Weight> where Weight : Comparable {
 	}
 }
 
-extension DependantArray {
+extension RelativeArray {
 	public struct Configuration {
 		public let initial: Weight
 		public let add: WeightOperator
@@ -68,7 +68,7 @@ extension DependantArray {
 	}
 }
 
-extension DependantArray.Configuration where Weight : AdditiveArithmetic {
+extension RelativeArray.Configuration where Weight : AdditiveArithmetic {
 	public init() {
 		self.initial = Weight.zero
 		self.add = { $0 + $1 }
@@ -76,13 +76,13 @@ extension DependantArray.Configuration where Weight : AdditiveArithmetic {
 	}
 }
 
-extension DependantArray where Weight : AdditiveArithmetic {
+extension RelativeArray where Weight : AdditiveArithmetic {
 	public init() {
 		self.init(configuration: .init())
 	}
 }
 
-extension DependantArray {
+extension RelativeArray {
 	private func findDependency(for position: Int) -> Weight {
 		guard let record = storage[before: position] else {
 			return configuration.initial
@@ -133,7 +133,7 @@ extension DependantArray {
 	}
 }
 
-extension DependantArray {
+extension RelativeArray {
 	public mutating func append(_ value: WeightedValue) {
 		insert(value, at: endIndex)
 	}
@@ -186,7 +186,7 @@ extension DependantArray {
 	}
 }
 
-extension DependantArray where Weight : Comparable {
+extension RelativeArray where Weight : Comparable {
 	public mutating func insert(_ value: WeightedValue, using predicate: Predicate) {
 		let idx = storage.binarySearch(predicate: predicate) ?? storage.endIndex
 
@@ -205,12 +205,12 @@ extension DependantArray where Weight : Comparable {
 	}
 }
 
-extension DependantArray : Sequence {
+extension RelativeArray : Sequence {
 	public struct Iterator: IteratorProtocol {
-		private let array: DependantArray
-		private var index: DependantArray.Index
+		private let array: RelativeArray
+		private var index: RelativeArray.Index
 
-		init(array: DependantArray) {
+		init(array: RelativeArray) {
 			self.array = array
 			self.index = array.startIndex
 		}
@@ -233,7 +233,7 @@ extension DependantArray : Sequence {
 	}
 }
 
-extension DependantArray : RandomAccessCollection {
+extension RelativeArray : RandomAccessCollection {
 	public typealias Index = Int
 
 	public var startIndex: Index {
@@ -255,28 +255,28 @@ extension DependantArray : RandomAccessCollection {
 	}
 }
 
-extension DependantArray.WeightedValue : Equatable where Value : Equatable, Weight : Equatable {}
-extension DependantArray.WeightedValue : Hashable where Value : Hashable, Weight : Hashable {}
-extension DependantArray.WeightedValue : Sendable where Value : Sendable, Weight : Sendable {}
+extension RelativeArray.WeightedValue : Equatable where Value : Equatable, Weight : Equatable {}
+extension RelativeArray.WeightedValue : Hashable where Value : Hashable, Weight : Hashable {}
+extension RelativeArray.WeightedValue : Sendable where Value : Sendable, Weight : Sendable {}
 
-extension DependantArray.WeightedValue : CustomDebugStringConvertible {
+extension RelativeArray.WeightedValue : CustomDebugStringConvertible {
 	public var debugDescription: String {
 		"{\(self.value), \(self.weight)}"
 	}
 }
 
-extension DependantArray.WeightedValue where Value == Weight {
+extension RelativeArray.WeightedValue where Value == Weight {
 	public init(weight: Weight) {
 		self.value = weight
 		self.weight = weight
 	}
 }
 
-extension DependantArray.Record : Equatable where Value : Equatable, Weight : Equatable {}
-extension DependantArray.Record : Hashable where Value : Hashable, Weight : Hashable {}
-extension DependantArray.Record : Sendable where Value : Sendable, Weight : Sendable {}
+extension RelativeArray.Record : Equatable where Value : Equatable, Weight : Equatable {}
+extension RelativeArray.Record : Hashable where Value : Hashable, Weight : Hashable {}
+extension RelativeArray.Record : Sendable where Value : Sendable, Weight : Sendable {}
 
-extension DependantArray.Record : CustomDebugStringConvertible {
+extension RelativeArray.Record : CustomDebugStringConvertible {
 	public var debugDescription: String {
 		"{\(self.value), \(self.weight), \(self.dependency)}"
 	}

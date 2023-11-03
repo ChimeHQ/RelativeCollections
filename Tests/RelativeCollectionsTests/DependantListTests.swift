@@ -2,8 +2,8 @@ import XCTest
 
 import RelativeCollections
 
-final class DependantListTests: XCTestCase {
-	typealias TestList = DependantList<Int, Int>
+final class RelativeListTests: XCTestCase {
+	typealias TestList = RelativeList<Int, Int>
 
 	func testAppend() throws {
 		let list = TestList()
@@ -74,7 +74,7 @@ final class DependantListTests: XCTestCase {
 //	}
 }
 
-extension DependantListTests {
+extension RelativeListTests {
 	func testSplitRoot() {
 		let capacity = TestList.Capacity(leaf: 2, branch: 2)
 		let list = TestList(configuration: .init(capacity: capacity))

@@ -1,8 +1,8 @@
 import RelativeCollectionsInternal
 
-public final class DependantList<Value, Weight> where Weight : Comparable {
-	public typealias WeightedValue = DependantArray<Value, Weight>.WeightedValue
-	public typealias Record = DependantArray<Value, Weight>.Record
+public final class RelativeList<Value, Weight> where Weight : Comparable {
+	public typealias WeightedValue = RelativeArray<Value, Weight>.WeightedValue
+	public typealias Record = RelativeArray<Value, Weight>.Record
 	public typealias Predicate = (Weight, Index) -> Bool
 	public typealias WeightOperator = (Weight, Weight) -> Weight
 
@@ -20,7 +20,7 @@ public final class DependantList<Value, Weight> where Weight : Comparable {
 	}
 }
 
-extension DependantList {
+extension RelativeList {
 	public struct Capacity {
 		public let branch: Int
 		public let leaf: Int
@@ -51,20 +51,20 @@ extension DependantList {
 	}
 }
 
-extension DependantList.Configuration where Weight : AdditiveArithmetic {
-	public init(capacity: DependantList.Capacity = .init()) {
+extension RelativeList.Configuration where Weight : AdditiveArithmetic {
+	public init(capacity: RelativeList.Capacity = .init()) {
 		self.capacity = capacity
 		self.leafConfiguration = .init()
 	}
 }
 
-extension DependantList where Weight : AdditiveArithmetic {
+extension RelativeList where Weight : AdditiveArithmetic {
 	public convenience init() {
 		self.init(configuration: .init())
 	}
 }
 
-extension DependantList {
+extension RelativeList {
 	/// Insert a new WeightedValue
 	///
 	/// This will recursively descend down the tree to find the insertion point. It will then also recursively split nodes as needed to maintain the tree balance.
@@ -114,7 +114,7 @@ extension DependantList {
 	}
 }
 
-extension DependantList {
+extension RelativeList {
 	private func recursivePrint() {
 		print("internal rep:")
 		root.recursivePrint(depth: 0, nodeWeight: .init(count: 0, weight: configuration.initial))
@@ -123,7 +123,7 @@ extension DependantList {
 	private func splitRoot() {
 		let newWeightedValue = root.split()
 
-		var branch = DependantList.Branch(configuration: configuration.leafConfiguration)
+		var branch = RelativeList.Branch(configuration: configuration.leafConfiguration)
 
 		let weight = root.weight ?? configuration.initial
 		let rootNodeWeight = Branch.NodeWeight(count: root.count, weight: weight)
@@ -136,7 +136,7 @@ extension DependantList {
 	}
 }
 
-extension DependantList {
+extension RelativeList {
 	public func append(_ value: WeightedValue) {
 		insert(value, at: endIndex)
 	}
@@ -228,7 +228,7 @@ extension DependantList {
 	}
 }
 
-extension DependantList {
+extension RelativeList {
 //	private func addChild(_ newNode: Node, to parent: Node?, using predicate: Predicate) {
 //		precondition(newNode !== parent)
 //
@@ -272,7 +272,7 @@ extension DependantList {
 //	}
 }
 
-extension DependantList : Sequence {
+extension RelativeList : Sequence {
 	public struct Iterator : IteratorProtocol {
 		private var node: Node?
 		private var index: Array.Index
@@ -310,7 +310,7 @@ extension DependantList : Sequence {
 }
 
 
-extension DependantList : RandomAccessCollection {
+extension RelativeList : RandomAccessCollection {
 	public typealias Index = Int
 
 	public var startIndex: Index {

@@ -1,6 +1,6 @@
-extension DependantList {
+extension RelativeList {
 	struct Leaf {
-		typealias Storage = DependantArray<Value, Weight>
+		typealias Storage = RelativeArray<Value, Weight>
 
 		var storage: Storage
 		var next: Node?
@@ -49,9 +49,9 @@ extension DependantList {
 	}
 }
 
-extension DependantList {
+extension RelativeList {
 	struct Branch {
-		typealias Storage = DependantArray<Node, NodeWeight>
+		typealias Storage = RelativeArray<Node, NodeWeight>
 
 		struct NodeWeight : Comparable {
 			let count: Int
@@ -65,7 +65,7 @@ extension DependantList {
 		var storage: Storage
 		var count: Int
 
-		init(configuration: DependantList.Leaf.Storage.Configuration) {
+		init(configuration: RelativeList.Leaf.Storage.Configuration) {
 			let config = Storage.Configuration(
 				initial: NodeWeight(count: 0, weight: configuration.initial),
 				add: { NodeWeight(count: $0.count + $1.count, weight: configuration.add($0.weight, $1.weight)) },
@@ -116,7 +116,7 @@ extension DependantList {
 	}
 }
 
-extension DependantList {
+extension RelativeList {
 	final class Node {
 		enum Kind {
 			case branch(Branch)
@@ -199,8 +199,8 @@ extension DependantList {
 	}
 }
 
-extension DependantList.Node {
-	func record(at target: DependantList.Index) -> DependantList.Record {
+extension RelativeList.Node {
+	func record(at target: RelativeList.Index) -> RelativeList.Record {
 		switch kind {
 		case let .leaf(leaf):
 			precondition(target >= 0)
@@ -221,8 +221,8 @@ extension DependantList.Node {
 	}
 }
 
-extension DependantList.Node {
-	func recursivePrint(depth: Int, nodeWeight: DependantList.Branch.NodeWeight) {
+extension RelativeList.Node {
+	func recursivePrint(depth: Int, nodeWeight: RelativeList.Branch.NodeWeight) {
 		let padding = String(repeating: "\t", count: depth)
 		let offset = nodeWeight.count
 		let weight = nodeWeight.weight

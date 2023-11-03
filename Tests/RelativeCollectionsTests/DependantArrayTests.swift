@@ -2,8 +2,8 @@ import XCTest
 
 import RelativeCollections
 
-final class DependantArrayTests: XCTestCase {
-	typealias TestArray = DependantArray<Int, Int>
+final class RelativeArrayTests: XCTestCase {
+	typealias TestArray = RelativeArray<Int, Int>
 
 	func testAppend() throws {
 		var array = TestArray()
@@ -141,7 +141,7 @@ final class DependantArrayTests: XCTestCase {
 	}
 }
 
-extension DependantArrayTests {
+extension RelativeArrayTests {
 	func testIterator() throws {
 		var array = TestArray()
 
