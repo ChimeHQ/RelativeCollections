@@ -1,11 +1,11 @@
-# DependantCollections
+# RelativeCollections
 Swift collection types that support efficient storage of order-relative values
 
 ## Integration
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/ChimeHQ/DependantCollections", branch: "main")
+    .package(url: "https://github.com/ChimeHQ/RelativeCollections", branch: "main")
 ]
 ```
 
@@ -42,7 +42,7 @@ struct Metrics {
 To get this working, we also need to define a few core operations on the `Weight`. You can do that through a `Configuration` property.
 
 ```swift
-let config = DependantArray<Metrics, Int>.Configuration(
+let config = RelativeArray<Metrics, Int>.Configuration(
     initial: 0,
     add: { lengthA, lengthB in lengthA + lengthB },
     subtract:  lengthA, lengthB in lengthA - lengthB }
@@ -51,7 +51,7 @@ let config = DependantArray<Metrics, Int>.Configuration(
 
 All this ceremony allows for very abstract `Weight` types. However, we can do better for types that implement `AdditiveArithmetic`, which `Int` does! In that case, `Configuration` has predefined behavior that will automatically do the right thing. Making your own custom types conform to `AdditiveArithmetic` will allow it to work the same way.
 
-This allows us to define a configuration with a default initializer. And, this is also set as a default for `DependantArray`, so in this case we can avoid dealing with configuration entirely.
+This allows us to define a configuration with a default initializer. And, this is also set as a default for `RelativeArray`, so in this case we can avoid dealing with configuration entirely.
 
 On to some example data! Let's say we'd like to store metrics for this text:
 
@@ -64,7 +64,7 @@ On to some example data! Let's say we'd like to store metrics for this text:
 We can do that by creating our array with the right types and appending some `WeightedValue` types in.
 
 ```swift
-let array = DependantArray<Metrics, Int>()
+let array = RelativeArray<Metrics, Int>()
 
 array.append(
     WeightedValue(value: Metrics(3, 3), weight: 9),
@@ -92,17 +92,17 @@ let metrics = record.value.   // Metrics(1, 0)
 
 ## Structures
 
-### `DependantArray`
+### `RelativeArray`
 
-A `DependantArray` is the simplest type. It stores a `Value` and `Weight` in a plain array. On its own, this type can be handy for many applications. But, it is also used as a building block for more complex structures.
+A `RelativeArray` is the simplest type. It stores a `Value` and `Weight` in a plain array. On its own, this type can be handy for many applications. But, it is also used as a building block for more complex structures.
 
-`DependantArray` conforms to `Sequence` and `RandomAccessCollection`. It supports CoW, just like other Swift collections.
+`RelativeArray` conforms to `Sequence` and `RandomAccessCollection`. It supports CoW, just like other Swift collections.
 
-### `DependantList`
+### `RelativeList`
 
 This is a position-addressable type, like an array. However, internally it stores data in a [B+Tree](https://en.wikipedia.org/wiki/B%2B_tree). That gets you logarithmic insertion and deletion.
 
-`DependantList` conforms to `Sequence` and `RandomAccessCollection`.
+`RelativeList` conforms to `Sequence` and `RandomAccessCollection`.
 
 However, this is a reference type and does not support CoW. I started looking into it more, but just getting this to work was hard enough.
 
