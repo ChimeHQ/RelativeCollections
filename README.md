@@ -11,7 +11,7 @@ dependencies: [
 
 ## Concepts
 
-All the strutures here store relative data. This means that a given value has some kind of dependency on the values that came before. If you're data fits into this model, it can help to improve the efficiency of certain operations.
+All the structures here store relative data. This means that a given value has some kind of dependency on the values that came before. If you're data fits into this model, it can help to improve the efficiency of certain operations.
 
 These are very similar in concept to a [Rope](https://en.wikipedia.org/wiki/Rope_(data_structure)). And while these structures are just a little more generalized, the terminology used is similar. Data is split into two components: `Value` and `Weight`. The `Value` is independent data. The `Weight` is the per-element contribution. The full element is reconstructed by combining all preceding elements `Weight`, along with its independent `Value`.
 
@@ -112,7 +112,7 @@ You might be wondering why I didn't use a [Red-black tree](https://en.wikipedia.
 
 At one point, I got excited about trying out a [skip list](https://en.wikipedia.org/wiki/Skip_list) for this, because skip lists are cool. I had a tough time getting my head around how to do this at all, and skip lists just made it harder.
 
-Typically, when faced with this kind of problem you have to measure. Carefully. But, the alure of optimization-without-rigor is powerful and I gave in. I don't know if this structure is actually faster than a RBTree or standard B-Tree. But I learned a lot. I hope that one day [Swift Collections](https://github.com/apple/swift-collections) provides a suitable B+Tree or Rope.
+Typically, when faced with this kind of problem you have to measure. Carefully. But, the allure of optimization-without-rigor is powerful and I gave in. I don't know if this structure is actually faster than a RBTree or standard B-Tree. But I learned a lot. I hope that one day [Swift Collections](https://github.com/apple/swift-collections) provides a suitable B+Tree or Rope.
 
 ## Related Projects
 
