@@ -68,7 +68,7 @@ extension RelativeList {
 	/// Insert a new WeightedValue
 	///
 	/// This will recursively descend down the tree to find the insertion point. It will then also recursively split nodes as needed to maintain the tree balance.
-	func insert(_ weighted: WeightedValue, at target: Index, in node: Node, parent: Node?) {
+	private func insert(_ weighted: WeightedValue, at target: Index, in node: Node, parent: Node?) {
 		switch node.kind {
  		case var .leaf(leaf):
 			leaf.storage.insert(weighted, at: target)
@@ -94,7 +94,7 @@ extension RelativeList {
 			// now recurse
 			insert(weighted, at: adjustedTarget, in: subNode, parent: node)
 
-			if subNode.exceeds(configuration.capacity) {
+			if subNode.isTooFull(for: configuration.capacity) {
 				// subnode is now holding too much, gotta split it
 				let newWeightedValue = subNode.split()
 
@@ -106,10 +106,63 @@ extension RelativeList {
 		}
 
 		// check if the root needs splitting too
-		if node === root && node.exceeds(configuration.capacity) {
+		if node === root && node.isTooFull(for: configuration.capacity) {
 			precondition(parent == nil)
 
 			splitRoot()
+		}
+	}
+
+	private func replace(_ weighted: WeightedValue, at target: Index, in node: Node) {
+		switch node.kind {
+		case var .leaf(leaf):
+			leaf.storage.replace(weighted, at: target)
+
+			node.kind = .leaf(leaf)
+		case var .branch(branch):
+			guard let entryIndex = branch.localIndex(representing: target) else {
+				fatalError()
+			}
+
+			var branchEntry = branch.storage[entryIndex]
+			let subNode = branchEntry.value
+			let adjustedTarget = target - branchEntry.dependency.count
+
+			let currentWeight = branchEntry.weightedValue.weight
+			let newWeight = Branch.NodeWeight(count: 0, weight: weighted.weight)
+
+			branchEntry.weightedValue.weight = branch.storage.configuration.subtract(currentWeight, newWeight)
+			branch.storage.replace(branchEntry.weightedValue, at: entryIndex)
+
+			// now recurse
+			replace(weighted, at: adjustedTarget, in: subNode)
+
+			node.kind = .branch(branch)
+		}
+	}
+
+	private func remove(at target: Index, in node: Node) {
+		switch node.kind {
+		case var .leaf(leaf):
+			leaf.storage.remove(at: target)
+
+			node.kind = .leaf(leaf)
+		case var .branch(branch):
+			guard let entryIndex = branch.localIndex(representing: target) else {
+				fatalError()
+			}
+
+			var branchEntry = branch.storage[entryIndex]
+			let subNode = branchEntry.value
+			let adjustedTarget = target - branchEntry.dependency.count
+
+			// before we recurse, update the values tracked by this branch entry
+			branch.count -= 1
+
+			// now recurse
+			remove(at: adjustedTarget, in: subNode)
+
+			node.kind = .branch(branch)
 		}
 	}
 }
@@ -147,84 +200,12 @@ extension RelativeList {
 		recursivePrint()
 	}
 
-//	private func recursiveInsert(_ weighted: WeightedValue, in node: NewNode, parent: NewNode?, using predicate: Predicate) {
-//		let offset = node.indexOffset
-//
-//		let idx = node.index(satisfying: predicate)
-//
-//		switch node.kind {
-//		case var .leaf(leaf):
-//			let idx = leaf.records.binarySearch(predicate: { predicate($0.weight, $1 + offset) })
-//			let target = idx ?? leaf.records.endIndex
-//
-//			leaf.records.insert(weighted, at: target)
-//
-//			node.kind = .leaf(leaf)
-//
-//			if leaf.count > configuration.capacity.leaf {
-//				let newNode = node.split(with: configuration.capacity)
-//
-//				addChild(newNode, to: parent, using: predicate)
-//			}
-//		case var .intern(intern):
-//			let idx = intern.nodes.binarySearch(predicate: { predicate($0.weight, $1 + offset) })
-//			guard let target = idx ?? intern.nodes.lastIndex else {
-//				preconditionFailure("Unable to find index within internal node, is it empty?")
-//			}
-//
-//			recursiveInsert(weighted, in: intern.nodes[target], parent: node, using: predicate)
-//
-//			intern.recordCount += 1
-//
-//			node.kind = .intern(intern)
-//		}
-//	}
-//
-//	private func findPosition(in node: Node, using predicate: Predicate) -> Position {
-//		let offset = node.indexOffset
-//
-//		switch node.kind {
-//		case let .leaf(leaf):
-//			let idx = leaf.records.binarySearch(predicate: { predicate($0.weight, $1 + offset) })
-//
-//			return Position(node: node, index: idx ?? leaf.records.endIndex)
-//		case .intern:
-//			fatalError()
-//		}
-//	}
-//
-//	private func findPosition(in _: Node, at index: Index) -> Position {
-//		var pos: Position = Position(node: root, index: 0)
-//
-//		let pred: Predicate = { _, idx in
-//			return idx >= index
-//		}
-//		
-//		recursiveFind(in: root, parent: nil, using: pred) { node, idx, parent in
-//			pos = Position(node: node, index: idx)
-//		}
-//
-//		return pos
-//	}
-
 	public func replace(_ weighted: WeightedValue, at index: Index) {
-//		let position = findPosition(in: root, at: index)
-//
-//		guard case var .leaf(leaf) = position.node.kind else { preconditionFailure() }
-//
-//		leaf.records.replace(weighted, at: position.index)
-//
-//		position.node.kind = .leaf(leaf)
+		replace(weighted, at: index, in: root)
 	}
 
 	public func remove(at index: Index) {
-//		let position = findPosition(in: root, at: index)
-//
-//		guard case var .leaf(leaf) = position.node.kind else { preconditionFailure() }
-//
-//		leaf.records.remove(at: position.index)
-//
-//		position.node.kind = .leaf(leaf)
+		remove(at: index, in: root)
 	}
 }
 

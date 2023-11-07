@@ -178,12 +178,21 @@ extension RelativeList {
 			}
 		}
 
-		func exceeds(_ capacity: Capacity) -> Bool {
+		func isTooFull(for capacity: Capacity) -> Bool {
 			switch kind {
 			case let .leaf(leaf):
 				leaf.storage.count > capacity.leaf
 			case let .branch(branch):
 				branch.storage.count > capacity.branch
+			}
+		}
+
+		func isFullEnough(_ capacity: Capacity) -> Bool {
+			switch kind {
+			case let .leaf(leaf):
+				leaf.storage.count > capacity.leaf / 2
+			case let .branch(branch):
+				branch.count > capacity.branch / 2
 			}
 		}
 
