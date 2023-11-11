@@ -11,21 +11,19 @@ dependencies: [
 
 ## Concepts
 
-All the structures here store relative data. This means that a given value has some kind of dependency on the values that came before. If you're data fits into this model, it can help to improve the efficiency of certain operations.
+All the structures here store relative data. This means that a given value has some kind of dependency on the values that came before. If your data fits into this model, it can help to improve the efficiency of certain operations.
 
-These are very similar in concept to a [Rope](https://en.wikipedia.org/wiki/Rope_(data_structure)). And while these structures are just a little more generalized, the terminology used is similar. Data is split into two components: `Value` and `Weight`. The `Value` is independent data. The `Weight` is the per-element contribution. The full element is reconstructed by combining all preceding elements `Weight`, along with its independent `Value`.
+This is very similar to a [Rope](https://en.wikipedia.org/wiki/Rope_(data_structure)). And while these structures are just a little more generalized, the terminology used is similar. Data is split into two components: `Value` and `Weight`. The `Value` is independent data. The `Weight` is the per-element contribution. The full element is reconstructed by combining all preceding elements `Weight`, along with its independent `Value`.
 
 To operate on the `Weight`, these collections need user-defined functions to perform addition, subtraction, as well as finding an initial value. However, if `Weight` conforms to the `AdditiveArithmetic` protocol, these can all be inferred.
 
 ## Usage
 
-Let's take a look at some real-world usage of a structure like this. Consider an application that works with text and needs to store information about each line in a document. You might just record the range of each line as `(start, length)`. This presents a problem when the text changes. Because the `start` value is absolute, you have update all subsequent entries on an edit.
+Let's take a look at some real-world usage of a structure like this. Consider an application that works with text and needs to store information about each line in a document. You might just record the range of each line as `(start, length)`. This is a great example of relative data! The `length` is the independent value. As long as an edit does not occur within the line, a `length` is not affected by edits. The relative value is the `start` - it is defined as the sum of all preceding lengths.
 
-This is a great example of relative data! The `length` is the independent value. As long as an edit does not occur within the line, a `length` is not affected by edits. The relative value is the `start` - it is defined as the sum of all preceding lengths.
+This `Metrics` type below stores information about a line of text. You could put all kinds of stuff in here, like the height of a line or if it contains any multi-byte UTF-8 data. We'll just record offsets to any leading and trailing whitespace.
 
-Here, `Metrics` is a type that stores information about a line of text. You could put all kinds of stuff in here, like the height of a line, if it contains any non-UTF-8 data. But, let's keep it simple and just record offsets to any leading and trailing whitespace.
-
-This `Metrics` type will be our independent `Value`. Line length, expressed as an `Int` with make up the relative `Weight`. This works because a line's absolute starting position is the sum of all preceding line lengths.
+This `Metrics` type will be our independent `Value`. Line length, expressed as an `Int` will make up the relative `Weight`. This works because a line's absolute starting position is the sum of all preceding line lengths.
 
 ```swift
 struct Metrics {
@@ -45,7 +43,7 @@ To get this working, we also need to define a few core operations on the `Weight
 let config = RelativeArray<Metrics, Int>.Configuration(
     initial: 0,
     add: { lengthA, lengthB in lengthA + lengthB },
-    subtract:  lengthA, lengthB in lengthA - lengthB }
+    subtract: { lengthA, lengthB in lengthA - lengthB }
 )
 ```
 
@@ -67,17 +65,16 @@ We can do that by creating our array with the right types and appending some `We
 let array = RelativeArray<Metrics, Int>()
 
 array.append(
-    WeightedValue(value: Metrics(3, 3), weight: 9),
+    WeightedValue(value: Metrics(3, 3), weight: 9)
 )
 
 array.append(
-    WeightedValue(value: Metrics(2, 0), weight: 8),
+    WeightedValue(value: Metrics(2, 0), weight: 8)
 )
 
 array.append(
-    WeightedValue(value: Metrics(1, 0), weight: 3),
+    WeightedValue(value: Metrics(1, 0), weight: 3)
 )
-
 ```
 
 Now that our data is loaded, we can read out values. And with a little work, we can reconstruct our desired values.
@@ -87,7 +84,7 @@ let record = array[2]
 
 let start = record.dependency // 17 (9 + 8)
 let length = record.weight    // 3
-let metrics = record.value.   // Metrics(1, 0)
+let metrics = record.value    // Metrics(1, 0)
 ```
 
 ## Structures
@@ -99,6 +96,8 @@ A `RelativeArray` is the simplest type. It stores a `Value` and `Weight` in a pl
 `RelativeArray` conforms to `Sequence` and `RandomAccessCollection`. It supports CoW, just like other Swift collections.
 
 ### `RelativeList`
+
+⚠️ Still a WIP ⚠️
 
 This is a position-addressable type, like an array. However, internally it stores data in a [B+Tree](https://en.wikipedia.org/wiki/B%2B_tree). That gets you logarithmic insertion and deletion.
 
