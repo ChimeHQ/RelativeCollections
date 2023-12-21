@@ -138,7 +138,7 @@ extension RelativeArray {
 		insert(value, at: endIndex)
 	}
 
-	mutating func insert(_ value: WeightedValue, at index: Index) {
+	public mutating func insert(_ value: WeightedValue, at index: Index) {
 		let previousWeight = findDependency(for: index)
 
 		let record = Record(value: value.value, weight: value.weight, dependency: previousWeight)
