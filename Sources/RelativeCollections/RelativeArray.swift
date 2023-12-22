@@ -273,17 +273,20 @@ extension RelativeArray {
 			dependency = configuration.add(element.weight, dependency)
 		}
 
+		let originalDependency = findDependency(for: range.upperBound)
+
 		storage.replaceSubrange(range, with: newRecords)
 
-		if range.upperBound >= storage.endIndex {
+		let affectedIndex = range.lowerBound + newRecords.count
+		if affectedIndex >= storage.endIndex {
 			return
 		}
 
 		// and now, we have to adjust everything past the insertion
-		let upperDependency = storage[range.upperBound].dependency
-		let delta = configuration.subtract(upperDependency, dependency)
 
-		applyDelta(delta, after: range.upperBound)
+		let delta = configuration.subtract(dependency, originalDependency)
+
+		applyDelta(delta, startingAt: affectedIndex)
 	}
 }
 

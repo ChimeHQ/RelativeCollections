@@ -2,6 +2,24 @@ import XCTest
 
 import RelativeCollections
 
+extension Array where Element == Int {
+	var relativeRanges: [Range<Int>] {
+		var start = 0
+
+		var ranges = [Range<Int>]()
+
+		for element in self {
+			let end = start + element
+
+			ranges.append(start..<end)
+
+			start = end
+		}
+
+		return ranges
+	}
+}
+
 final class RelativeArrayTests: XCTestCase {
 	typealias TestArray = RelativeArray<Int, Int>
 
@@ -27,28 +45,15 @@ final class RelativeArrayTests: XCTestCase {
 	func testUpdateFirst() throws {
 		var array = TestArray()
 
-		let ranges = [
-			0..<1,
-			1..<3,
-			3..<6,
-			6..<10
-		]
-
-		// insert lengths
-		for range in ranges {
-			array.append(.init(value: range.count, weight: range.count))
+		for length in [1, 2, 3, 4] {
+			array.append(.init(weight: length))
 		}
 
 		array.replace(.init(value: 5, weight: 5), at: 0)
 
 		let rebuilt = array.map { $0.dependency..<($0.dependency + $0.value) }
 
-		let expected = [
-			0..<5,
-			5..<7,
-			7..<10,
-			10..<14
-		]
+		let expected =  [5, 2, 3, 4].relativeRanges
 
 		XCTAssertEqual(rebuilt, expected)
 	}
@@ -56,28 +61,14 @@ final class RelativeArrayTests: XCTestCase {
 	func testUpdateLast() throws {
 		var array = TestArray()
 
-		let ranges = [
-			0..<1,
-			1..<3,
-			3..<6,
-			6..<10
-		]
-
-		// insert lengths
-		for range in ranges {
-			array.append(.init(value: range.count, weight: range.count))
+		for length in [1, 2, 3, 4] {
+			array.append(.init(weight: length))
 		}
 
-		array.replace(.init(value: 5, weight: 5), at: 3)
+		array.replace(.init(weight: 5), at: 3)
 
 		let rebuilt = array.map { $0.dependency..<($0.dependency + $0.value) }
-
-		let expected = [
-			0..<1,
-			1..<3,
-			3..<6,
-			6..<11
-		]
+		let expected = [1, 2, 3, 5].relativeRanges
 
 		XCTAssertEqual(rebuilt, expected)
 	}
@@ -91,9 +82,10 @@ final class RelativeArrayTests: XCTestCase {
 
 		array.remove(at: 0)
 
-		let expected = [2, 3, 4]
+		let rebuilt = array.map { $0.dependency..<($0.dependency + $0.value) }
+		let expected = [2, 3, 4].relativeRanges
 
-		XCTAssertEqual(array.map { $0.value }, expected)
+		XCTAssertEqual(rebuilt, expected)
 	}
 
 	func testInsertWithPredicate() {
@@ -107,9 +99,10 @@ final class RelativeArrayTests: XCTestCase {
 			return idx >= 1
 		}
 
-		let expected = [1, 5, 2, 3, 4]
+		let rebuilt = array.map { $0.dependency..<($0.dependency + $0.value) }
+		let expected = [1, 5, 2, 3, 4].relativeRanges
 
-		XCTAssertEqual(array.map { $0.value }, expected)
+		XCTAssertEqual(rebuilt, expected)
 	}
 
 	func testInsertAtBeginning() {
@@ -121,9 +114,11 @@ final class RelativeArrayTests: XCTestCase {
 
 		array.insert(.init(value: 5, weight: 5), at: 0)
 
-		let expected = [5, 1, 2, 3, 4]
+		let expected = [5, 1, 2, 3, 4].relativeRanges
 
-		XCTAssertEqual(array.map { $0.value }, expected)
+		let rebuilt = array.map { $0.dependency..<($0.dependency + $0.value) }
+
+		XCTAssertEqual(rebuilt, expected)
 	}
 
 	func testInsertWithPredicateAtFirst() {
@@ -137,9 +132,10 @@ final class RelativeArrayTests: XCTestCase {
 			return idx >= 0
 		}
 
-		let expected = [5, 1, 2, 3, 4]
+		let rebuilt = array.map { $0.dependency..<($0.dependency + $0.value) }
+		let expected = [5, 1, 2, 3, 4].relativeRanges
 
-		XCTAssertEqual(array.map { $0.value }, expected)
+		XCTAssertEqual(rebuilt, expected)
 	}
 
 	func testSubscriptAndRecordAreTheSame() {
@@ -179,9 +175,10 @@ extension RelativeArrayTests {
 			TestArray.WeightedValue(weight: 9)
 		])
 
-		let expected = [1, 8, 9, 4]
+		let rebuilt = array.map { $0.dependency..<($0.dependency + $0.value) }
+		let expected = [1, 8, 9, 4].relativeRanges
 
-		XCTAssertEqual(array.map { $0.value }, expected)
+		XCTAssertEqual(rebuilt, expected)
 	}
 
 	func testRangeReplacementEntireArray() throws {
@@ -196,8 +193,9 @@ extension RelativeArrayTests {
 			TestArray.WeightedValue(weight: 9)
 		])
 
-		let expected = [8, 9]
+		let rebuilt = array.map { $0.dependency..<($0.dependency + $0.value) }
+		let expected = [8, 9].relativeRanges
 
-		XCTAssertEqual(array.map { $0.value }, expected)
+		XCTAssertEqual(rebuilt, expected)
 	}
 }
