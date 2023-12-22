@@ -260,7 +260,6 @@ extension RelativeArray {
 		_ range: Range<Index>,
 		with newElements: Elements
 	) where WeightedValue == Elements.Element, Elements : Sequence {
-		let upperRecord = storage[range.upperBound]
 		let previousWeight = findDependency(for: range.lowerBound)
 
 		// create the new records and insert them
@@ -276,8 +275,13 @@ extension RelativeArray {
 
 		storage.replaceSubrange(range, with: newRecords)
 
+		if range.upperBound >= storage.endIndex {
+			return
+		}
+
 		// and now, we have to adjust everything past the insertion
-		let delta = configuration.subtract(upperRecord.dependency, dependency)
+		let upperDependency = storage[range.upperBound].dependency
+		let delta = configuration.subtract(upperDependency, dependency)
 
 		applyDelta(delta, after: range.upperBound)
 	}

@@ -183,4 +183,21 @@ extension RelativeArrayTests {
 
 		XCTAssertEqual(array.map { $0.value }, expected)
 	}
+
+	func testRangeReplacementEntireArray() throws {
+		var array = TestArray()
+
+		for length in [1, 2, 3, 4] {
+			array.append(.init(weight: length))
+		}
+
+		array.replaceSubrange(0..<4, with: [
+			TestArray.WeightedValue(weight: 8),
+			TestArray.WeightedValue(weight: 9)
+		])
+
+		let expected = [8, 9]
+
+		XCTAssertEqual(array.map { $0.value }, expected)
+	}
 }
