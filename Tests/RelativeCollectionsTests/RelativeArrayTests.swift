@@ -112,6 +112,20 @@ final class RelativeArrayTests: XCTestCase {
 		XCTAssertEqual(array.map { $0.value }, expected)
 	}
 
+	func testInsertAtBeginning() {
+		var array = TestArray()
+
+		for length in [1, 2, 3, 4] {
+			array.append(.init(value: length, weight: length))
+		}
+
+		array.insert(.init(value: 5, weight: 5), at: 0)
+
+		let expected = [5, 1, 2, 3, 4]
+
+		XCTAssertEqual(array.map { $0.value }, expected)
+	}
+
 	func testInsertWithPredicateAtFirst() {
 		var array = TestArray()
 
@@ -151,5 +165,22 @@ extension RelativeArrayTests {
 		}
 
 		XCTAssertEqual(Array(array), array.map { $0 } )
+	}
+
+	func testRangeReplacement() throws {
+		var array = TestArray()
+
+		for length in [1, 2, 3, 4] {
+			array.append(.init(weight: length))
+		}
+
+		array.replaceSubrange(1..<3, with: [
+			TestArray.WeightedValue(weight: 8),
+			TestArray.WeightedValue(weight: 9)
+		])
+
+		let expected = [1, 8, 9, 4]
+
+		XCTAssertEqual(array.map { $0.value }, expected)
 	}
 }

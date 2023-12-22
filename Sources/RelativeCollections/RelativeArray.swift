@@ -255,6 +255,34 @@ extension RelativeArray : RandomAccessCollection {
 	}
 }
 
+extension RelativeArray {
+	public mutating func replaceSubrange<Elements>(
+		_ range: Range<Index>,
+		with newElements: Elements
+	) where WeightedValue == Elements.Element, Elements : Sequence {
+		let upperRecord = storage[range.upperBound]
+		let previousWeight = findDependency(for: range.lowerBound)
+
+		// create the new records and insert them
+		var newRecords = [Record]()
+		var dependency = previousWeight
+
+		for element in newElements {
+			let record = Record(weightedValue: element, dependency: dependency)
+			newRecords.append(record)
+
+			dependency = configuration.add(element.weight, dependency)
+		}
+
+		storage.replaceSubrange(range, with: newRecords)
+
+		// and now, we have to adjust everything past the insertion
+		let delta = configuration.subtract(upperRecord.dependency, dependency)
+
+		applyDelta(delta, after: range.upperBound)
+	}
+}
+
 extension RelativeArray.WeightedValue : Equatable where Value : Equatable, Weight : Equatable {}
 extension RelativeArray.WeightedValue : Hashable where Value : Hashable, Weight : Hashable {}
 extension RelativeArray.WeightedValue : Sendable where Value : Sendable, Weight : Sendable {}
