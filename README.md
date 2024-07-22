@@ -1,3 +1,10 @@
+<div align="center">
+
+[![Build Status][build status badge]][build status]
+[![Matrix][matrix badge]][matrix]
+
+</div>
+
 # RelativeCollections
 Swift collection types that support efficient storage of order-relative values
 
@@ -121,10 +128,16 @@ Typically, when faced with this kind of problem you have to measure. Carefully. 
 
 ## Contributing and Collaboration
 
-I'd love to hear from you! Get in touch via an issue or pull request.
+I would love to hear from you! Issues or pull requests work great. Both [Matrix][matrix] and [Discord][discord] are available for live help, but I have a strong bias towards answering in the form of documentation.
 
 I prefer collaboration, and would love to find ways to work together if you have a similar project.
 
 I prefer indentation with tabs for improved accessibility. But, I'd rather you use the system you want and make a PR than hesitate because of whitespace.
 
 By participating in this project you agree to abide by the [Contributor Code of Conduct](CODE_OF_CONDUCT.md).
+
+[build status]: https://github.com/ChimeHQ/RelativeCollections/actions
+[build status badge]: https://github.com/ChimeHQ/RelativeCollections/workflows/CI/badge.svg
+[matrix]: https://matrix.to/#/%23chimehq%3Amatrix.org
+[matrix badge]: https://img.shields.io/matrix/chimehq%3Amatrix.org?label=Matrix
+[discord]: https://discord.gg/esFpX6sErJ
