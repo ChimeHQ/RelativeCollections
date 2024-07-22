@@ -31,4 +31,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Test platform ${{ matrix.destination }}
-        run: set -o pipefail && xcodebuild -scheme Neon -destination "${{ matrix.destination }}" test | xcbeautify
+        run: set -o pipefail && xcodebuild -scheme RelativeCollections -destination "${{ matrix.destination }}" test | xcbeautify
