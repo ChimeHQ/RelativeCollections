@@ -66,10 +66,13 @@ extension RelativeList {
 		var count: Int
 
 		init(configuration: RelativeList.Leaf.Storage.Configuration) {
+			let add = configuration.add
+			let sub = configuration.subtract
+			
 			let config = Storage.Configuration(
 				initial: NodeWeight(count: 0, weight: configuration.initial),
-				add: { NodeWeight(count: $0.count + $1.count, weight: configuration.add($0.weight, $1.weight)) },
-				subtract: { NodeWeight(count: $0.count - $1.count, weight: configuration.subtract($0.weight, $1.weight)) }
+				add: { NodeWeight(count: $0.count + $1.count, weight: add($0.weight, $1.weight)) },
+				subtract: { NodeWeight(count: $0.count - $1.count, weight: sub($0.weight, $1.weight)) }
 			)
 
 			self.init(storage: Storage(configuration: config), count: 0)

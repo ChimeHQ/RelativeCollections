@@ -3,8 +3,8 @@ import RelativeCollectionsInternal
 public final class RelativeList<Value, Weight> where Weight : Comparable {
 	public typealias WeightedValue = RelativeArray<Value, Weight>.WeightedValue
 	public typealias Record = RelativeArray<Value, Weight>.Record
-	public typealias Predicate = (Weight, Index) -> Bool
-	public typealias WeightOperator = (Weight, Weight) -> Weight
+	public typealias Predicate = @Sendable (Weight, Index) -> Bool
+	public typealias WeightOperator = @Sendable (Weight, Weight) -> Weight
 
 	struct Position {
 		let node: Node

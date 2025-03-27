@@ -2,7 +2,7 @@ import RelativeCollectionsInternal
 
 public struct RelativeArray<Value, Weight> where Weight : Comparable {
 	public typealias Predicate = (Record, Index) -> Bool
-	public typealias WeightOperator = (Weight, Weight) -> Weight
+	public typealias WeightOperator = @Sendable (Weight, Weight) -> Weight
 	private typealias Storage = ContiguousArray<Record>
 
 	public struct WeightedValue {
@@ -315,4 +315,10 @@ extension RelativeArray.Record : CustomDebugStringConvertible {
 	public var debugDescription: String {
 		"{\(self.value), \(self.weight), \(self.dependency)}"
 	}
+}
+
+extension RelativeArray.Configuration : Sendable where Weight : Sendable {
+}
+
+extension RelativeArray : Sendable where Record : Sendable {
 }
